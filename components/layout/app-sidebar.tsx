@@ -1,11 +1,21 @@
 "use client"
 
+import Image from "next/image"
 import Link from "next/link"
-import { usePathname } from "next/navigation"
-import { LineChart, LogOut } from "lucide-react"
+import { usePathname, useRouter } from "next/navigation"
+import { LogOut } from "lucide-react"
 
 import { footerNavItems, mainNavItems } from "@/lib/navigation"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { clearSession, useSession } from "@/lib/auth"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import {
   Sidebar,
   SidebarContent,
@@ -18,8 +28,24 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
 
+function initials(fullName: string) {
+  return fullName
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]!.toUpperCase())
+    .join("")
+}
+
 export function AppSidebar() {
   const pathname = usePathname()
+  const router = useRouter()
+  const user = useSession()
+
+  function handleLogout() {
+    clearSession()
+    router.push("/login")
+  }
 
   return (
     <Sidebar
@@ -31,8 +57,14 @@ export function AppSidebar() {
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" render={<Link href="/" />}>
-              <span className="bg-primary text-primary-foreground flex aspect-square size-8 shrink-0 items-center justify-center rounded-md">
-                <LineChart className="size-4" />
+              <span className="flex aspect-square size-8 shrink-0 items-center justify-center rounded-md">
+                <Image
+                  src="/money_kabu_boutou.png"
+                  alt=""
+                  width={32}
+                  height={32}
+                  className="rounded-sm"
+                />
               </span>
               <span className="grid flex-1 text-left leading-tight">
                 <span className="truncate text-sm font-semibold">
@@ -89,21 +121,35 @@ export function AppSidebar() {
       <SidebarFooter>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton size="lg" className="cursor-default" type="button">
-              <Avatar className="size-7 rounded-full">
-                <AvatarImage src="/avatars/david-vance.jpg" alt="David Vance" />
-                <AvatarFallback>DV</AvatarFallback>
-              </Avatar>
-              <span className="flex min-w-0 flex-col text-left leading-tight">
-                <span className="truncate text-sm font-medium">
-                  David Vance
-                </span>
-                <span className="text-sidebar-foreground/60 truncate text-xs">
-                  Senior Manager
-                </span>
-              </span>
-              <LogOut className="ml-auto size-4" />
-            </SidebarMenuButton>
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                render={
+                  <SidebarMenuButton size="lg">
+                    <Avatar className="size-7 rounded-full">
+                      <AvatarFallback>
+                        {user ? initials(user.fullName) : ""}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span className="flex min-w-0 flex-col text-left leading-tight">
+                      <span className="truncate text-sm font-medium">
+                        {user?.fullName}
+                      </span>
+                      <span className="text-sidebar-foreground/60 truncate text-xs">
+                        {user?.username}
+                      </span>
+                    </span>
+                    <LogOut className="ml-auto size-4" />
+                  </SidebarMenuButton>
+                }
+              />
+              <DropdownMenuContent align="end">
+                <DropdownMenuLabel>{user?.fullName}</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem variant="destructive" onClick={handleLogout}>
+                  Log out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarFooter>

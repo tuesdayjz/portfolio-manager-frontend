@@ -25,7 +25,7 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (getSession()) {
-      router.replace("/dashboard")
+      router.replace("/")
     }
   }, [router])
 
@@ -40,7 +40,7 @@ export default function LoginPage() {
     }
 
     setSession(user.username)
-    router.push("/dashboard")
+    router.push("/")
   }
 
   return (

@@ -27,7 +27,7 @@ export default function RegisterPage() {
 
   useEffect(() => {
     if (getSession()) {
-      router.replace("/dashboard")
+      router.replace("/")
     }
   }, [router])
 
@@ -48,7 +48,7 @@ export default function RegisterPage() {
     try {
       const user = registerUser({ username, password, fullName, dob })
       setSession(user.username)
-      router.push("/dashboard")
+      router.push("/")
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong.")
     }

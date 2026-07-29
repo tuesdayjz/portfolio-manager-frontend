@@ -8,16 +8,18 @@ export default function DashboardLayout({
   children: React.ReactNode
 }) {
   return (
-    <SidebarProvider className="flex min-h-full flex-1 flex-col">
-      <SiteHeader />
-      <div className="flex flex-1">
-        <AppSidebar />
-        <SidebarInset>
-          <div className="flex flex-1 flex-col gap-4 p-4 md:p-6">
-            {children}
-          </div>
-        </SidebarInset>
-      </div>
-    </SidebarProvider>
+    <div className="flex min-h-full flex-1 flex-col [--header-height:calc(--spacing(16))]">
+      <SidebarProvider className="flex flex-1 flex-col">
+        <SiteHeader />
+        <div className="flex flex-1">
+          <AppSidebar />
+          <SidebarInset>
+            <div className="flex flex-1 flex-col gap-4 p-4 md:p-6">
+              {children}
+            </div>
+          </SidebarInset>
+        </div>
+      </SidebarProvider>
+    </div>
   )
 }

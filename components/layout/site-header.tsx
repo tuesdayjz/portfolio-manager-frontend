@@ -1,9 +1,9 @@
-import Link from "next/link"
-import { ArrowDownLeft, ArrowUpRight, LineChart, TrendingUp } from "lucide-react"
+import { ArrowDownLeft, ArrowUpRight, TrendingUp } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { SidebarTrigger } from "@/components/ui/sidebar"
+import { ThemeToggle } from "@/components/layout/theme-toggle"
 
 const portfolio = {
   totalValue: 1_247_832.5,
@@ -19,17 +19,8 @@ const currencyFormatter = new Intl.NumberFormat("en-US", {
 
 export function SiteHeader() {
   return (
-    <header className="bg-background sticky top-0 z-30 flex h-16 shrink-0 items-center gap-3 border-b px-4 md:px-6">
-      <SidebarTrigger className="md:hidden" />
-
-      <Link href="/" className="flex shrink-0 items-center gap-2">
-        <span className="bg-primary text-primary-foreground flex size-7 items-center justify-center rounded-md">
-          <LineChart className="size-4" />
-        </span>
-        <span className="text-sm font-semibold tracking-tight">
-          PortfolioIQ
-        </span>
-      </Link>
+    <header className="bg-background sticky top-0 z-30 flex h-(--header-height) shrink-0 items-center gap-3 border-b px-4 md:px-6">
+      <SidebarTrigger />
 
       <Separator orientation="vertical" className="hidden h-6 md:block" />
 
@@ -61,6 +52,8 @@ export function SiteHeader() {
           <ArrowUpRight />
           Buy
         </Button>
+        <Separator orientation="vertical" className="h-6" />
+        <ThemeToggle />
       </div>
     </header>
   )

@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect } from "react"
+import Image from "next/image"
 import { useRouter } from "next/navigation"
 
 import { clearSession, useSession } from "@/lib/auth"
@@ -52,7 +53,14 @@ export default function DashboardLayout({
   return (
     <div className="flex min-h-screen flex-1 flex-col">
       <header className="flex items-center justify-between border-b px-6 py-3">
-        <span className="font-heading text-base font-semibold">
+        <span className="flex items-center gap-2 font-heading text-base font-semibold">
+          <Image
+            src="/money_kabu_boutou.png"
+            alt=""
+            width={28}
+            height={28}
+            className="rounded-sm"
+          />
           Portfolio Manager
         </span>
         <DropdownMenu>

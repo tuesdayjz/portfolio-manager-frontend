@@ -104,7 +104,7 @@ export function PerformanceSummaryCard() {
       <CardFooter className="flex items-center justify-between text-xs text-muted-foreground">
         <span>Benchmark: {performanceBenchmarkLabel}</span>
         <Link
-          href="/performance"
+          href="/analytics"
           className="font-medium text-primary hover:underline"
         >
           See Details →

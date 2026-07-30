@@ -5,6 +5,7 @@ import {
   ChevronDown,
   ChevronUp,
   ChevronsUpDown,
+  Search,
   TrendingDown,
   TrendingUp,
 } from "lucide-react"
@@ -18,8 +19,10 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
 import { Tabs, TabsIndicator, TabsList, TabsTab } from "@/components/ui/tabs"
 import { cn } from "@/lib/utils"
+import { matchesQuery } from "@/lib/search"
 import { useSession } from "@/lib/auth"
 import { LoginPromptOverlay } from "@/components/layout/login-prompt-overlay"
 import {
@@ -381,22 +384,40 @@ function OptionsTable({ positions }: { positions: OptionPosition[] }) {
   )
 }
 
-function AssetClassPanel({ assetClass }: { assetClass: AssetClass }) {
-  const holdings = HOLDINGS.filter((p) => p.assetClass === assetClass)
-  const optionPositions = OPTION_POSITIONS.filter((p) => p.assetClass === assetClass)
+function AssetClassPanel({
+  assetClass,
+  holdings,
+  optionPositions,
+}: {
+  assetClass: AssetClass
+  holdings: HoldingPosition[]
+  optionPositions: OptionPosition[]
+}) {
+  const holdingsInClass = holdings.filter((p) => p.assetClass === assetClass)
+  const optionsInClass = optionPositions.filter((p) => p.assetClass === assetClass)
 
   return (
     <div className="flex flex-col gap-4">
-      <HoldingsTable positions={holdings} />
-      <OptionsTable positions={optionPositions} />
+      <HoldingsTable positions={holdingsInClass} />
+      <OptionsTable positions={optionsInClass} />
     </div>
   )
 }
 
 export default function PositionsPage() {
   const [assetClass, setAssetClass] = useState<AssetClass>(ASSET_CLASSES[0].value)
+  const [query, setQuery] = useState("")
   const user = useSession()
   const isLoggedIn = !!user
+
+  const filteredHoldings = useMemo(
+    () => HOLDINGS.filter((p) => matchesQuery(query, p.symbol, p.name)),
+    [query]
+  )
+  const filteredOptions = useMemo(
+    () => OPTION_POSITIONS.filter((p) => matchesQuery(query, p.symbol, p.name)),
+    [query]
+  )
 
   return (
     <div className="relative">
@@ -409,29 +430,51 @@ export default function PositionsPage() {
         aria-hidden={!isLoggedIn}
         inert={!isLoggedIn}
       >
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-semibold">Positions</h1>
+            <p className="text-muted-foreground">
+              Your holdings and today&apos;s performance by asset class.
+            </p>
+          </div>
+          <div className="relative w-full sm:w-64">
+            <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              type="search"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search by symbol or name..."
+              className="pl-8"
+            />
+          </div>
+        </div>
+
         <Tabs
           value={assetClass}
           onValueChange={(value) => setAssetClass(value as AssetClass)}
           className="flex flex-col gap-6"
         >
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            <div>
-              <h1 className="text-2xl font-semibold">Positions</h1>
-              <p className="text-muted-foreground">
-                Your holdings and today&apos;s performance by asset class.
-              </p>
-            </div>
-            <TabsList>
-              <TabsIndicator />
-              {ASSET_CLASSES.map((option) => (
-                <TabsTab key={option.value} value={option.value}>
-                  {option.label}
-                </TabsTab>
-              ))}
-            </TabsList>
-          </div>
+          <TabsList>
+            <TabsIndicator />
+            {ASSET_CLASSES.map((option) => (
+              <TabsTab key={option.value} value={option.value}>
+                {option.label}
+              </TabsTab>
+            ))}
+          </TabsList>
         </Tabs>
-        <AssetClassPanel assetClass={assetClass} />
+
+        {filteredHoldings.length === 0 && filteredOptions.length === 0 ? (
+          <p className="py-12 text-center text-sm text-muted-foreground">
+            No positions match &quot;{query}&quot;.
+          </p>
+        ) : (
+          <AssetClassPanel
+            assetClass={assetClass}
+            holdings={filteredHoldings}
+            optionPositions={filteredOptions}
+          />
+        )}
       </div>
 
       {!isLoggedIn && <LoginPromptOverlay />}

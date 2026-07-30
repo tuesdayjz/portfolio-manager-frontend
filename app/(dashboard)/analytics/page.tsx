@@ -242,7 +242,7 @@ function PerformancePanel({ seriesKey }: { seriesKey: PerformanceSeriesKey }) {
   )
 }
 
-export default function PerformancePage() {
+export default function AnalyticsPage() {
   const [seriesKey, setSeriesKey] = useState<PerformanceSeriesKey>("all")
   const user = useSession()
   const isLoggedIn = !!user
@@ -265,7 +265,7 @@ export default function PerformancePage() {
         >
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
-              <h1 className="text-2xl font-semibold tracking-tight">Performance</h1>
+              <h1 className="text-2xl font-semibold tracking-tight">Analytics</h1>
               <p className="text-muted-foreground text-sm">
                 Overall holding performance by asset class and time period.
               </p>

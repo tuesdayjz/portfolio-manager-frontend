@@ -5,7 +5,7 @@ import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { LogIn, LogOut, UserPlus } from "lucide-react"
 
-import { footerNavItems, mainNavItems } from "@/lib/navigation"
+import { footerNavItems, mainNavItems, tradeNavItem } from "@/lib/navigation"
 import { clearSession, useSession } from "@/lib/auth"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import {
@@ -26,6 +26,7 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarSeparator,
 } from "@/components/ui/sidebar"
 
 function initials(fullName: string) {
@@ -95,6 +96,32 @@ export function AppSidebar() {
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        <SidebarSeparator className="mx-0" />
+
+        {/*
+          Trade is an action rather than a report, so it's set apart from the
+          list above (its own group, below Transaction History) and styled as
+          a filled, primary-colored call to action instead of a plain nav
+          link, so it stands out at a glance.
+        */}
+        <SidebarGroup>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  render={<Link href={tradeNavItem.url} />}
+                  isActive={pathname === tradeNavItem.url}
+                  tooltip={tradeNavItem.title}
+                  className="bg-primary text-primary-foreground shadow-sm hover:bg-primary/90 hover:text-primary-foreground data-active:bg-primary data-active:text-primary-foreground"
+                >
+                  <tradeNavItem.icon />
+                  <span className="font-semibold">{tradeNavItem.title}</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

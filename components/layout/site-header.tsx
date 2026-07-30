@@ -1,6 +1,7 @@
-import { ArrowDownLeft, ArrowUpRight, TrendingUp } from "lucide-react"
+import Link from "next/link"
+import { ArrowRightLeft, TrendingUp } from "lucide-react"
 
-import { Button } from "@/components/ui/button"
+import { buttonVariants } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { SidebarTrigger } from "@/components/ui/sidebar"
 import { ThemeToggle } from "@/components/layout/theme-toggle"
@@ -44,14 +45,10 @@ export function SiteHeader() {
       </div>
 
       <div className="ml-auto flex items-center gap-2">
-        <Button variant="outline" size="sm">
-          <ArrowDownLeft />
-          Sell
-        </Button>
-        <Button size="sm">
-          <ArrowUpRight />
-          Buy
-        </Button>
+        <Link href="/trade" className={buttonVariants({ size: "sm" })}>
+          <ArrowRightLeft />
+          Trade
+        </Link>
         <Separator orientation="vertical" className="h-6" />
         <ThemeToggle />
       </div>

@@ -1,18 +1,11 @@
 ﻿"use client"
 
 import { useMemo, useState } from "react"
-import {
-  ChevronDown,
-  ChevronUp,
-  ChevronsUpDown,
-  TrendingDown,
-  TrendingUp,
-} from "lucide-react"
+import Image from "next/image"
+import { ChevronDown, ChevronUp, ChevronsUpDown } from "lucide-react"
 
-import { Badge } from "@/components/ui/badge"
 import {
   Card,
-  CardAction,
   CardContent,
   CardDescription,
   CardHeader,
@@ -50,30 +43,19 @@ function DayChange({ percent }: { percent: number }) {
   return (
     <span
       className={cn(
-        "font-medium",
+        "inline-flex items-center justify-end gap-1.5 font-medium",
         positive ? "text-chart-3" : "text-destructive"
       )}
     >
+      <Image
+        src={positive ? "/kabu_chart_boutou.png" : "/kabu_chart_bouraku.png"}
+        alt={positive ? "Price up" : "Price down"}
+        width={36}
+        height={36}
+        className="shrink-0 rounded-sm"
+      />
       {positive ? "+" : ""}
       {percent.toFixed(2)}%
-    </span>
-  )
-}
-
-function TotalReturn({ dollar, percent }: { dollar: number; percent: number }) {
-  const positive = dollar >= 0
-  const Icon = positive ? TrendingUp : TrendingDown
-  return (
-    <span
-      className={cn(
-        "inline-flex items-center gap-1.5 font-medium",
-        positive ? "text-chart-3" : "text-destructive"
-      )}
-    >
-      <Icon className="size-4 shrink-0" />
-      {positive ? "+" : ""}
-      {formatCurrency(dollar)} ({positive ? "+" : ""}
-      {percent.toFixed(2)}%)
     </span>
   )
 }
@@ -101,7 +83,7 @@ function SortableHeader({
 }) {
   const active = sort?.key === sortKey
   return (
-    <th className="py-1.5 pr-4 text-right font-medium last:pr-0">
+    <th className="py-2 pr-4 text-right font-medium last:pr-0">
       <button
         type="button"
         onClick={() => onSort(sortKey)}
@@ -149,11 +131,6 @@ function HoldingsTable({ positions }: { positions: HoldingPosition[] }) {
     (sum, p) => sum + p.quantity * p.currentPrice,
     0
   )
-  const todayChangeDollar = positions.reduce(
-    (sum, p) => sum + p.quantity * p.currentPrice * (p.dayChangePercent / 100),
-    0
-  )
-  const todayChangePercent = marketValue !== 0 ? (todayChangeDollar / marketValue) * 100 : 0
 
   const sortedPositions = useMemo(() => {
     if (!sort) return positions
@@ -172,13 +149,10 @@ function HoldingsTable({ positions }: { positions: HoldingPosition[] }) {
   }
 
   return (
-    <Card size="sm">
+    <Card>
       <CardHeader>
         <CardTitle>Holdings</CardTitle>
         <CardDescription>{formatCurrency(marketValue)} market value</CardDescription>
-        <CardAction>
-          <TotalReturn dollar={todayChangeDollar} percent={todayChangePercent} />
-        </CardAction>
       </CardHeader>
       <CardContent>
         {positions.length === 0 ? (
@@ -204,13 +178,13 @@ function HoldingsTable({ positions }: { positions: HoldingPosition[] }) {
               </colgroup>
               <thead>
                 <tr className="border-b text-left text-muted-foreground">
-                  <th className="py-1.5 pr-4 font-medium">Symbol</th>
-                  <th className="py-1.5 pr-4 font-medium">Side</th>
-                  <th className="py-1.5 pr-4 font-medium" aria-hidden />
-                  <th className="py-1.5 pr-4 font-medium" aria-hidden />
-                  <th className="py-1.5 pr-4 font-medium">Quantity</th>
-                  <th className="py-1.5 pr-4 font-medium">Avg Price</th>
-                  <th className="py-1.5 pr-4 font-medium">Current Price</th>
+                  <th className="py-2 pr-4 font-medium">Symbol</th>
+                  <th className="py-2 pr-4 font-medium">Side</th>
+                  <th className="py-2 pr-4 font-medium" aria-hidden />
+                  <th className="py-2 pr-4 font-medium" aria-hidden />
+                  <th className="py-2 pr-4 font-medium">Quantity</th>
+                  <th className="py-2 pr-4 font-medium">Avg Price</th>
+                  <th className="py-2 pr-4 font-medium">Current Price</th>
                   <SortableHeader sort={sort} sortKey="today" onSort={handleSort}>
                     Today
                   </SortableHeader>
@@ -222,30 +196,29 @@ function HoldingsTable({ positions }: { positions: HoldingPosition[] }) {
               <tbody>
                 {sortedPositions.map((position) => (
                   <tr key={position.symbol} className="border-b last:border-0">
-                    <td className="py-1.5 pr-4">
+                    <td className="py-2.5 pr-4">
                       <div className="font-medium">{position.symbol}</div>
                       <div className="text-xs text-muted-foreground">{position.name}</div>
                     </td>
-                    <td className="py-1.5 pr-4">
-                      <Badge
-                        variant="outline"
+                    <td className="py-2.5 pr-4">
+                      <span
                         className={cn(
                           "capitalize",
-                          position.side === "short" && "border-destructive/30 text-destructive"
+                          position.side === "short" && "text-destructive"
                         )}
                       >
                         {position.side}
-                      </Badge>
+                      </span>
                     </td>
-                    <td className="py-1.5 pr-4 text-muted-foreground">—</td>
-                    <td className="py-1.5 pr-4 text-muted-foreground">—</td>
-                    <td className="py-1.5 pr-4">{position.quantity.toLocaleString()}</td>
-                    <td className="py-1.5 pr-4">{formatPrice(position.avgPrice)}</td>
-                    <td className="py-1.5 pr-4">{formatPrice(position.currentPrice)}</td>
-                    <td className="py-1.5 pr-4 text-right tabular-nums">
+                    <td className="py-2.5 pr-4 text-muted-foreground">—</td>
+                    <td className="py-2.5 pr-4 text-muted-foreground">—</td>
+                    <td className="py-2.5 pr-4">{position.quantity.toLocaleString()}</td>
+                    <td className="py-2.5 pr-4">{formatPrice(position.avgPrice)}</td>
+                    <td className="py-2.5 pr-4">{formatPrice(position.currentPrice)}</td>
+                    <td className="py-2.5 pr-4 text-right tabular-nums">
                       <DayChange percent={position.dayChangePercent} />
                     </td>
-                    <td className="py-1.5 pr-0 text-right">
+                    <td className="py-2.5 pr-0 text-right">
                       {formatCurrency(position.quantity * position.currentPrice)}
                     </td>
                   </tr>
@@ -266,11 +239,6 @@ function OptionsTable({ positions }: { positions: OptionPosition[] }) {
     (sum, p) => sum + p.contracts * p.currentPrice,
     0
   )
-  const todayChangeDollar = positions.reduce(
-    (sum, p) => sum + p.contracts * p.currentPrice * (p.dayChangePercent / 100),
-    0
-  )
-  const todayChangePercent = marketValue !== 0 ? (todayChangeDollar / marketValue) * 100 : 0
 
   const sortedPositions = useMemo(() => {
     if (!sort) return positions
@@ -289,13 +257,10 @@ function OptionsTable({ positions }: { positions: OptionPosition[] }) {
   }
 
   return (
-    <Card size="sm">
+    <Card>
       <CardHeader>
         <CardTitle>Options</CardTitle>
         <CardDescription>{formatCurrency(marketValue)} market value</CardDescription>
-        <CardAction>
-          <TotalReturn dollar={todayChangeDollar} percent={todayChangePercent} />
-        </CardAction>
       </CardHeader>
       <CardContent>
         {positions.length === 0 ? (
@@ -321,13 +286,13 @@ function OptionsTable({ positions }: { positions: OptionPosition[] }) {
               </colgroup>
               <thead>
                 <tr className="border-b text-left text-muted-foreground">
-                  <th className="py-1.5 pr-4 font-medium">Symbol</th>
-                  <th className="py-1.5 pr-4 font-medium">Type</th>
-                  <th className="py-1.5 pr-4 font-medium">Strike</th>
-                  <th className="py-1.5 pr-4 font-medium">Expiry</th>
-                  <th className="py-1.5 pr-4 font-medium">Contracts</th>
-                  <th className="py-1.5 pr-4 font-medium">Avg Price</th>
-                  <th className="py-1.5 pr-4 font-medium">Current Price</th>
+                  <th className="py-2 pr-4 font-medium">Symbol</th>
+                  <th className="py-2 pr-4 font-medium">Type</th>
+                  <th className="py-2 pr-4 font-medium">Strike</th>
+                  <th className="py-2 pr-4 font-medium">Expiry</th>
+                  <th className="py-2 pr-4 font-medium">Contracts</th>
+                  <th className="py-2 pr-4 font-medium">Avg Price</th>
+                  <th className="py-2 pr-4 font-medium">Current Price</th>
                   <SortableHeader sort={sort} sortKey="today" onSort={handleSort}>
                     Today
                   </SortableHeader>
@@ -342,30 +307,20 @@ function OptionsTable({ positions }: { positions: OptionPosition[] }) {
                     key={`${position.symbol}-${position.optionType}-${position.strike}-${position.expiry}`}
                     className="border-b last:border-0"
                   >
-                    <td className="py-1.5 pr-4">
+                    <td className="py-2.5 pr-4">
                       <div className="font-medium">{position.symbol}</div>
                       <div className="text-xs text-muted-foreground">{position.name}</div>
                     </td>
-                    <td className="py-1.5 pr-4">
-                      <Badge
-                        variant="outline"
-                        className={cn(
-                          "capitalize",
-                          position.optionType === "put" && "border-destructive/30 text-destructive"
-                        )}
-                      >
-                        {position.optionType}
-                      </Badge>
-                    </td>
-                    <td className="py-1.5 pr-4">{formatPrice(position.strike)}</td>
-                    <td className="py-1.5 pr-4">{position.expiry}</td>
-                    <td className="py-1.5 pr-4">{position.contracts.toLocaleString()}</td>
-                    <td className="py-1.5 pr-4">{formatPrice(position.avgPrice)}</td>
-                    <td className="py-1.5 pr-4">{formatPrice(position.currentPrice)}</td>
-                    <td className="py-1.5 pr-4 text-right tabular-nums">
+                    <td className="py-2.5 pr-4 capitalize">{position.optionType}</td>
+                    <td className="py-2.5 pr-4">{formatPrice(position.strike)}</td>
+                    <td className="py-2.5 pr-4">{position.expiry}</td>
+                    <td className="py-2.5 pr-4">{position.contracts.toLocaleString()}</td>
+                    <td className="py-2.5 pr-4">{formatPrice(position.avgPrice)}</td>
+                    <td className="py-2.5 pr-4">{formatPrice(position.currentPrice)}</td>
+                    <td className="py-2.5 pr-4 text-right tabular-nums">
                       <DayChange percent={position.dayChangePercent} />
                     </td>
-                    <td className="py-1.5 pr-0 text-right">
+                    <td className="py-2.5 pr-0 text-right">
                       {formatCurrency(position.contracts * position.currentPrice)}
                     </td>
                   </tr>
@@ -395,7 +350,7 @@ export default function PositionsPage() {
   const [assetClass, setAssetClass] = useState<AssetClass>(ASSET_CLASSES[0].value)
 
   return (
-    <div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
+    <div className="flex flex-col gap-6">
       <Tabs
         value={assetClass}
         onValueChange={(value) => setAssetClass(value as AssetClass)}

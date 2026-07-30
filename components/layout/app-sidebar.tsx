@@ -59,16 +59,17 @@ export function AppSidebar() {
             <SidebarMenuButton size="lg" render={<Link href="/" />}>
               <span className="flex aspect-square size-8 shrink-0 items-center justify-center rounded-md">
                 <Image
-                  src="/money_kabu_boutou.png"
+                  src="/felix-icon.svg"
                   alt=""
                   width={32}
                   height={32}
                   className="rounded-sm"
+                  unoptimized
                 />
               </span>
               <span className="grid flex-1 text-left leading-tight">
                 <span className="truncate text-sm font-semibold">
-                  PortfolioIQ
+                  Felix
                 </span>
                 <span className="text-sidebar-foreground/60 truncate text-xs">
                   Portfolio Manager

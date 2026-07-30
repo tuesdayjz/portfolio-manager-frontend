@@ -17,7 +17,6 @@ export type NavItem = {
 
 export const mainNavItems: NavItem[] = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
-  { title: "Allocations", url: "/allocations", icon: PieChart },
   { title: "Positions", url: "/positions", icon: Wallet },
   { title: "Trade", url: "/trade", icon: ArrowLeftRight },
   { title: "Performance", url: "/performance", icon: LineChart },

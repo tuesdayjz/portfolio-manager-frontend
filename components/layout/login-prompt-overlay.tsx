@@ -22,13 +22,18 @@ export function LoginPromptOverlay() {
             </p>
           </div>
           <div className="flex w-full gap-2">
-            <Button className="flex-1" render={<Link href="/login" />}>
+            <Button
+              className="flex-1"
+              render={<Link href="/login" />}
+              nativeButton={false}
+            >
               Log In
             </Button>
             <Button
               variant="outline"
               className="flex-1"
               render={<Link href="/register" />}
+              nativeButton={false}
             >
               Register
             </Button>

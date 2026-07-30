@@ -21,6 +21,8 @@ import {
 import { SegmentedToggle } from "@/components/trade/segmented-toggle"
 import { Tabs, TabsIndicator, TabsList, TabsTab } from "@/components/ui/tabs"
 import { cn } from "@/lib/utils"
+import { useSession } from "@/lib/auth"
+import { LoginPromptOverlay } from "@/components/layout/login-prompt-overlay"
 import {
   PERFORMANCE_TABS,
   TIME_RANGES,
@@ -242,32 +244,46 @@ function PerformancePanel({ seriesKey }: { seriesKey: PerformanceSeriesKey }) {
 
 export default function PerformancePage() {
   const [seriesKey, setSeriesKey] = useState<PerformanceSeriesKey>("all")
+  const user = useSession()
+  const isLoggedIn = !!user
 
   return (
-    <div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
-      <Tabs
-        value={seriesKey}
-        onValueChange={(value) => setSeriesKey(value as PerformanceSeriesKey)}
-        className="flex flex-col gap-6"
+    <div className="relative">
+      <div
+        className={
+          isLoggedIn
+            ? "mx-auto flex w-full max-w-6xl flex-col gap-6"
+            : "mx-auto flex w-full max-w-6xl flex-col gap-6 blur-sm pointer-events-none select-none"
+        }
+        aria-hidden={!isLoggedIn}
+        inert={!isLoggedIn}
       >
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-semibold tracking-tight">Performance</h1>
-            <p className="text-muted-foreground text-sm">
-              Overall holding performance by asset class and time period.
-            </p>
+        <Tabs
+          value={seriesKey}
+          onValueChange={(value) => setSeriesKey(value as PerformanceSeriesKey)}
+          className="flex flex-col gap-6"
+        >
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div>
+              <h1 className="text-2xl font-semibold tracking-tight">Performance</h1>
+              <p className="text-muted-foreground text-sm">
+                Overall holding performance by asset class and time period.
+              </p>
+            </div>
+            <TabsList>
+              <TabsIndicator />
+              {PERFORMANCE_TABS.map((option) => (
+                <TabsTab key={option.value} value={option.value}>
+                  {option.label}
+                </TabsTab>
+              ))}
+            </TabsList>
           </div>
-          <TabsList>
-            <TabsIndicator />
-            {PERFORMANCE_TABS.map((option) => (
-              <TabsTab key={option.value} value={option.value}>
-                {option.label}
-              </TabsTab>
-            ))}
-          </TabsList>
-        </div>
-      </Tabs>
-      <PerformancePanel seriesKey={seriesKey} />
+        </Tabs>
+        <PerformancePanel seriesKey={seriesKey} />
+      </div>
+
+      {!isLoggedIn && <LoginPromptOverlay />}
     </div>
   )
 }

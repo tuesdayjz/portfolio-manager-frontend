@@ -20,6 +20,8 @@ import {
 } from "@/components/ui/card"
 import { Tabs, TabsIndicator, TabsList, TabsTab } from "@/components/ui/tabs"
 import { cn } from "@/lib/utils"
+import { useSession } from "@/lib/auth"
+import { LoginPromptOverlay } from "@/components/layout/login-prompt-overlay"
 import {
   ASSET_CLASSES,
   HOLDINGS,
@@ -393,32 +395,46 @@ function AssetClassPanel({ assetClass }: { assetClass: AssetClass }) {
 
 export default function PositionsPage() {
   const [assetClass, setAssetClass] = useState<AssetClass>(ASSET_CLASSES[0].value)
+  const user = useSession()
+  const isLoggedIn = !!user
 
   return (
-    <div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
-      <Tabs
-        value={assetClass}
-        onValueChange={(value) => setAssetClass(value as AssetClass)}
-        className="flex flex-col gap-6"
+    <div className="relative">
+      <div
+        className={
+          isLoggedIn
+            ? "mx-auto flex w-full max-w-6xl flex-col gap-6"
+            : "mx-auto flex w-full max-w-6xl flex-col gap-6 blur-sm pointer-events-none select-none"
+        }
+        aria-hidden={!isLoggedIn}
+        inert={!isLoggedIn}
       >
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-semibold">Positions</h1>
-            <p className="text-muted-foreground">
-              Your holdings and today&apos;s performance by asset class.
-            </p>
+        <Tabs
+          value={assetClass}
+          onValueChange={(value) => setAssetClass(value as AssetClass)}
+          className="flex flex-col gap-6"
+        >
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div>
+              <h1 className="text-2xl font-semibold">Positions</h1>
+              <p className="text-muted-foreground">
+                Your holdings and today&apos;s performance by asset class.
+              </p>
+            </div>
+            <TabsList>
+              <TabsIndicator />
+              {ASSET_CLASSES.map((option) => (
+                <TabsTab key={option.value} value={option.value}>
+                  {option.label}
+                </TabsTab>
+              ))}
+            </TabsList>
           </div>
-          <TabsList>
-            <TabsIndicator />
-            {ASSET_CLASSES.map((option) => (
-              <TabsTab key={option.value} value={option.value}>
-                {option.label}
-              </TabsTab>
-            ))}
-          </TabsList>
-        </div>
-      </Tabs>
-      <AssetClassPanel assetClass={assetClass} />
+        </Tabs>
+        <AssetClassPanel assetClass={assetClass} />
+      </div>
+
+      {!isLoggedIn && <LoginPromptOverlay />}
     </div>
   )
 }

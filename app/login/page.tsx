@@ -2,6 +2,7 @@
 
 import { useEffect, useState, type FormEvent } from "react"
 import { useRouter } from "next/navigation"
+import Image from "next/image"
 import Link from "next/link"
 
 import { getSession, loginUser, setSession } from "@/lib/auth"
@@ -44,7 +45,11 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex flex-1 items-center justify-center p-4">
+    <div className="flex flex-1 flex-col items-center justify-center gap-6 p-4">
+      <Link href="/" className="flex items-center gap-2">
+        <Image src="/felix-icon.svg" alt="" width={32} height={32} className="rounded-sm" unoptimized />
+        <span className="font-heading text-lg font-semibold">Felix</span>
+      </Link>
       <Card className="w-full max-w-sm">
         <CardHeader>
           <CardTitle>Log in</CardTitle>

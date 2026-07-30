@@ -4,15 +4,12 @@ import { AppSidebar } from "@/components/layout/app-sidebar"
 import { SiteHeader } from "@/components/layout/site-header"
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 
+// TODO: re-enable the /login redirect guard here before shipping.
 export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
-  // Logged-out visitors still see the shell (sidebar + header) so the
-  // dashboard pages can render a blurred sample preview with a login
-  // prompt, instead of being redirected away. Each page decides how to
-  // render itself for a logged-out `useSession()` value.
   return (
     <div className="flex min-h-full flex-1 flex-col [--header-height:calc(--spacing(16))]">
       <SidebarProvider className="flex flex-1 flex-col">

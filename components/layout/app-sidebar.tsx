@@ -3,7 +3,7 @@
 import Image from "next/image"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
-import { LogOut } from "lucide-react"
+import { LogIn, LogOut, UserPlus } from "lucide-react"
 
 import { footerNavItems, mainNavItems } from "@/lib/navigation"
 import { clearSession, useSession } from "@/lib/auth"
@@ -120,37 +120,66 @@ export function AppSidebar() {
 
       <SidebarFooter>
         <SidebarMenu>
-          <SidebarMenuItem>
-            <DropdownMenu>
-              <DropdownMenuTrigger
-                render={
-                  <SidebarMenuButton size="lg">
-                    <Avatar className="size-7 rounded-full">
-                      <AvatarFallback>
-                        {user ? initials(user.fullName) : ""}
-                      </AvatarFallback>
-                    </Avatar>
-                    <span className="flex min-w-0 flex-col text-left leading-tight">
-                      <span className="truncate text-sm font-medium">
-                        {user?.fullName}
+          {user ? (
+            <SidebarMenuItem>
+              <DropdownMenu>
+                <DropdownMenuTrigger
+                  render={
+                    <SidebarMenuButton size="lg">
+                      <Avatar className="size-7 rounded-full">
+                        <AvatarFallback>
+                          {initials(user.fullName)}
+                        </AvatarFallback>
+                      </Avatar>
+                      <span className="flex min-w-0 flex-col text-left leading-tight">
+                        <span className="truncate text-sm font-medium">
+                          {user.fullName}
+                        </span>
+                        <span className="text-sidebar-foreground/60 truncate text-xs">
+                          {user.username}
+                        </span>
                       </span>
-                      <span className="text-sidebar-foreground/60 truncate text-xs">
-                        {user?.username}
-                      </span>
-                    </span>
-                    <LogOut className="ml-auto size-4" />
-                  </SidebarMenuButton>
-                }
-              />
-              <DropdownMenuContent align="end">
-                <DropdownMenuLabel>{user?.fullName}</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem variant="destructive" onClick={handleLogout}>
-                  Log out
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </SidebarMenuItem>
+                      <LogOut className="ml-auto size-4" />
+                    </SidebarMenuButton>
+                  }
+                />
+                <DropdownMenuContent align="end">
+                  <DropdownMenuLabel>{user.fullName}</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    variant="destructive"
+                    onClick={handleLogout}
+                  >
+                    Log out
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </SidebarMenuItem>
+          ) : (
+            <>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  size="lg"
+                  render={<Link href="/register" />}
+                  tooltip="Register"
+                  className="bg-primary text-primary-foreground hover:bg-primary/90 data-active:bg-primary data-active:text-primary-foreground"
+                >
+                  <UserPlus />
+                  <span>Register</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  size="lg"
+                  render={<Link href="/login" />}
+                  tooltip="Log In"
+                >
+                  <LogIn />
+                  <span>Log In</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </>
+          )}
         </SidebarMenu>
       </SidebarFooter>
     </Sidebar>

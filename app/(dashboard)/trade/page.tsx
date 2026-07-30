@@ -22,6 +22,8 @@ import {
   type SecuritySearchResult,
 } from "@/lib/securities"
 import type { TradeOrder } from "@/lib/trade-orders"
+import { useSession } from "@/lib/auth"
+import { LoginPromptOverlay } from "@/components/layout/login-prompt-overlay"
 
 type TradeTab = "equity" | "options"
 
@@ -72,6 +74,8 @@ function OrderHistory({ orders }: { orders: TradeOrder[] }) {
 export default function TradePage() {
   const [tab, setTab] = useState<TradeTab>("equity")
   const [orders, setOrders] = useState<TradeOrder[]>([])
+  const user = useSession()
+  const isLoggedIn = !!user
 
   const [symbol, setSymbol] = useState<string | null>(null)
   const [quote, setQuote] = useState<SecurityQuote | null>(null)
@@ -102,64 +106,76 @@ export default function TradePage() {
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
-      <div>
-        <h1 className="text-2xl font-semibold">Trade</h1>
-        <p className="text-muted-foreground">
-          Search a security for its live price and chart, then build your order.
-        </p>
-      </div>
-
-      <div className="flex flex-col gap-3">
-        <SecuritySearch onSelect={handleSelect} className="max-w-md" />
-        <QuoteCard
-          quote={quote}
-          loading={quoteLoading}
-          error={quoteError}
-          onRefresh={() => symbol && loadQuote(symbol)}
-        />
-      </div>
-
-      {symbol ? (
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[380px_1fr] lg:items-start">
-          <Card>
-            <CardHeader>
-              <Tabs value={tab} onValueChange={(value) => setTab(value as TradeTab)}>
-                <TabsList>
-                  <TabsIndicator />
-                  <TabsTab value="equity">Buy/Sell</TabsTab>
-                  <TabsTab value="options">Options</TabsTab>
-                </TabsList>
-              </Tabs>
-            </CardHeader>
-            <CardContent>
-              {tab === "equity" ? (
-                <EquityOrderForm key={symbol} quote={quote} onSubmit={handleOrder} />
-              ) : (
-                <OptionOrderForm key={symbol} symbol={symbol} quote={quote} onSubmit={handleOrder} />
-              )}
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Price Chart</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <CandlestickChart symbol={symbol} currency={quote?.currency ?? "USD"} />
-            </CardContent>
-          </Card>
+    <div className="relative">
+      <div
+        className={
+          isLoggedIn
+            ? "mx-auto flex w-full max-w-6xl flex-col gap-6"
+            : "mx-auto flex w-full max-w-6xl flex-col gap-6 blur-sm pointer-events-none select-none"
+        }
+        aria-hidden={!isLoggedIn}
+        inert={!isLoggedIn}
+      >
+        <div>
+          <h1 className="text-2xl font-semibold">Trade</h1>
+          <p className="text-muted-foreground">
+            Search a security for its live price and chart, then build your order.
+          </p>
         </div>
-      ) : (
-        <Card>
-          <CardContent className="flex h-64 items-center justify-center px-6 text-center text-sm text-muted-foreground">
-            Search for a security above to pull its live price, interactive chart, and place
-            an order.
-          </CardContent>
-        </Card>
-      )}
 
-      <OrderHistory orders={orders} />
+        <div className="flex flex-col gap-3">
+          <SecuritySearch onSelect={handleSelect} className="max-w-md" />
+          <QuoteCard
+            quote={quote}
+            loading={quoteLoading}
+            error={quoteError}
+            onRefresh={() => symbol && loadQuote(symbol)}
+          />
+        </div>
+
+        {symbol ? (
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-[380px_1fr] lg:items-start">
+            <Card>
+              <CardHeader>
+                <Tabs value={tab} onValueChange={(value) => setTab(value as TradeTab)}>
+                  <TabsList>
+                    <TabsIndicator />
+                    <TabsTab value="equity">Buy/Sell</TabsTab>
+                    <TabsTab value="options">Options</TabsTab>
+                  </TabsList>
+                </Tabs>
+              </CardHeader>
+              <CardContent>
+                {tab === "equity" ? (
+                  <EquityOrderForm key={symbol} quote={quote} onSubmit={handleOrder} />
+                ) : (
+                  <OptionOrderForm key={symbol} symbol={symbol} quote={quote} onSubmit={handleOrder} />
+                )}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Price Chart</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <CandlestickChart symbol={symbol} currency={quote?.currency ?? "USD"} />
+              </CardContent>
+            </Card>
+          </div>
+        ) : (
+          <Card>
+            <CardContent className="flex h-64 items-center justify-center px-6 text-center text-sm text-muted-foreground">
+              Search for a security above to pull its live price, interactive chart, and place
+              an order.
+            </CardContent>
+          </Card>
+        )}
+
+        <OrderHistory orders={orders} />
+      </div>
+
+      {!isLoggedIn && <LoginPromptOverlay />}
     </div>
   )
 }

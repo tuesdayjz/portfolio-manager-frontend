@@ -8,7 +8,7 @@ import { AssetAllocationCard } from "@/components/dashboard/asset-allocation-car
 import { PerformanceSummaryCard } from "@/components/dashboard/performance-summary-card"
 import { TopPositionsCard } from "@/components/dashboard/top-positions-card"
 import { RecentTransactionsCard } from "@/components/dashboard/recent-transactions-card"
-import { LoginPromptOverlay } from "@/components/dashboard/login-prompt-overlay"
+import { LoginPromptOverlay } from "@/components/layout/login-prompt-overlay"
 
 export default function DashboardPage() {
   const user = useSession()

@@ -65,6 +65,8 @@ export const recentTransactions: Transaction[] = [
   { date: "Jun 08, 2024", type: "BUY", asset: "NVDA", qty: 10, price: 875.12, total: 8_751.2 },
   { date: "Jun 03, 2024", type: "BUY", asset: "AMZN", qty: 15, price: 181.2, total: 2_718.0 },
   { date: "May 28, 2024", type: "SELL", asset: "TSLA", qty: 50, price: 98.4, total: 4_920.0 },
+  { date: "Apr 14, 2024", type: "BUY", asset: "MSFT", qty: 12, price: 415.6, total: 4_987.2 },
+  { date: "Apr 11, 2024", type: "SELL", asset: "AAPL", qty: 20, price: 178.5, total: 3_570.0 },
 ]
 
 export const totalTransactionsCount = 120

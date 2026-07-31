@@ -18,7 +18,6 @@ export type NavItem = {
 // Regular, read-only report pages. Rendered as the standard sidebar list.
 export const mainNavItems: NavItem[] = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
-  { title: "Allocations", url: "/allocations", icon: PieChart },
   { title: "Positions", url: "/positions", icon: Wallet },
   { title: "Analytics", url: "/analytics", icon: LineChart },
   { title: "Transaction History", url: "/transactions", icon: History },

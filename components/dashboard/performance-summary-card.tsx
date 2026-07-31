@@ -58,7 +58,7 @@ export function PerformanceSummaryCard() {
           Portfolio Growth
         </span>
       </CardHeader>
-      <CardContent className="h-60">
+      <CardContent className="flex grow h-60">
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart
             data={performanceHistory}

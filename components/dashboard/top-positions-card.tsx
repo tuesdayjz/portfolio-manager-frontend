@@ -51,7 +51,7 @@ export function TopPositionsCard() {
           className="h-8 w-40 sm:w-48"
         />
       </CardHeader>
-      <CardContent className="px-0">
+      <CardContent className="flex grow px-0">
         <Table>
           <TableHeader>
             <TableRow>

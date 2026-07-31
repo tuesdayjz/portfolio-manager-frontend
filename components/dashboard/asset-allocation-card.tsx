@@ -25,7 +25,7 @@ export function AssetAllocationCard() {
         </CardTitle>
         <Badge variant="secondary">{assetAllocation.length} Asset Classes</Badge>
       </CardHeader>
-      <CardContent className="flex flex-col items-center gap-6 sm:flex-row">
+      <CardContent className="flex grow flex-col items-center gap-6 sm:flex-row">
         <div className="relative size-40 shrink-0">
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
@@ -73,12 +73,6 @@ export function AssetAllocationCard() {
       </CardContent>
       <CardFooter className="flex items-center justify-between text-xs text-muted-foreground">
         <span>Last updated 5 mins ago</span>
-        <Link
-          href="/allocations"
-          className="font-medium text-primary hover:underline"
-        >
-          See Details →
-        </Link>
       </CardFooter>
     </Card>
   )

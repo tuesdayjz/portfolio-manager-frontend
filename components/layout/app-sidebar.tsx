@@ -43,8 +43,8 @@ export function AppSidebar() {
   const router = useRouter()
   const user = useSession()
 
-  function handleLogout() {
-    clearSession()
+  async function handleLogout() {
+    await clearSession()
     router.push("/login")
   }
 
@@ -164,7 +164,7 @@ export function AppSidebar() {
                           {user.fullName}
                         </span>
                         <span className="text-sidebar-foreground/60 truncate text-xs">
-                          {user.username}
+                          {user.email}
                         </span>
                       </span>
                       <LogOut className="ml-auto size-4" />

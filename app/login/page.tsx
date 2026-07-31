@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import Image from "next/image"
 import Link from "next/link"
 
-import { getSession, loginUser, setSession } from "@/lib/auth"
+import { loginUser, useSession } from "@/lib/auth"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -20,28 +20,35 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 
 export default function LoginPage() {
   const router = useRouter()
-  const [username, setUsername] = useState("")
+  const session = useSession()
+  const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [error, setError] = useState<string | null>(null)
+  const [submitting, setSubmitting] = useState(false)
 
   useEffect(() => {
-    if (getSession()) {
+    if (session) {
       router.replace("/")
     }
-  }, [router])
+  }, [session, router])
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setError(null)
+    setSubmitting(true)
 
-    const user = loginUser(username, password)
-    if (!user) {
-      setError("Invalid username or password.")
-      return
+    try {
+      const user = await loginUser(email, password)
+      if (!user) {
+        setError("Invalid email or password.")
+        return
+      }
+      router.push("/")
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Something went wrong.")
+    } finally {
+      setSubmitting(false)
     }
-
-    setSession(user.username)
-    router.push("/")
   }
 
   return (
@@ -54,7 +61,7 @@ export default function LoginPage() {
         <CardHeader>
           <CardTitle>Log in</CardTitle>
           <CardDescription>
-            Enter your username and password to access your portfolio.
+            Enter your email and password to access your portfolio.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -65,12 +72,13 @@ export default function LoginPage() {
               </Alert>
             )}
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="username">Username</Label>
+              <Label htmlFor="email">Email</Label>
               <Input
-                id="username"
-                autoComplete="username"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
+                id="email"
+                type="email"
+                autoComplete="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 required
               />
             </div>
@@ -85,8 +93,8 @@ export default function LoginPage() {
                 required
               />
             </div>
-            <Button type="submit" className="mt-2 w-full">
-              Log in
+            <Button type="submit" className="mt-2 w-full" disabled={submitting}>
+              {submitting ? "Logging in..." : "Log in"}
             </Button>
             <p className="text-center text-sm text-muted-foreground">
               Don&apos;t have an account?{" "}

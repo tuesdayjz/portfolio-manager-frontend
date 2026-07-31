@@ -5,11 +5,19 @@ import { buttonVariants } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { SidebarTrigger } from "@/components/ui/sidebar"
 import { ThemeToggle } from "@/components/layout/theme-toggle"
+import { assetAllocation } from "@/lib/mock-data"
 
 const portfolio = {
   totalValue: 1_247_832.5,
   totalReturnPct: 12.4,
 }
+
+// Uninvested cash is tracked as a slice of the overall allocation mix, so
+// derive the dollar balance from that percentage instead of hardcoding it
+// separately (and risking it drifting out of sync with the allocation chart).
+const cashAllocationPct =
+  assetAllocation.find((slice) => slice.label === "Cash")?.pct ?? 0
+const cashBalance = portfolio.totalValue * (cashAllocationPct / 100)
 
 const currencyFormatter = new Intl.NumberFormat("en-US", {
   style: "currency",
@@ -32,6 +40,14 @@ export function SiteHeader() {
           </span>
           <span className="text-sm font-semibold tabular-nums">
             {currencyFormatter.format(portfolio.totalValue)}
+          </span>
+        </div>
+        <div className="flex flex-col">
+          <span className="text-muted-foreground text-[11px] font-medium tracking-wide uppercase">
+            Total Balance
+          </span>
+          <span className="text-sm font-semibold tabular-nums">
+            {currencyFormatter.format(cashBalance)}
           </span>
         </div>
         <div className="flex flex-col">

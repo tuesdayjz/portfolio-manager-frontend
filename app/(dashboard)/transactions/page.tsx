@@ -183,7 +183,7 @@ function TransactionsTable({
               Total
             </SortableHeader>
             <SortableHeader sort={sort} sortKey="gain" onSort={onSort}>
-              Gain / Loss
+              Realized Gain / Loss
             </SortableHeader>
           </tr>
         </thead>

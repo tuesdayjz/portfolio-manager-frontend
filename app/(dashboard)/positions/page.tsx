@@ -154,11 +154,13 @@ function HoldingsTable({ positions }: { positions: HoldingPosition[] }) {
     (sum, p) => sum + p.quantity * p.currentPrice,
     0
   )
-  const todayChangeDollar = positions.reduce(
-    (sum, p) => sum + p.quantity * p.currentPrice * (p.dayChangePercent / 100),
-    0
-  )
-  const todayChangePercent = marketValue !== 0 ? (todayChangeDollar / marketValue) * 100 : 0
+  const costBasis = positions.reduce((sum, p) => sum + p.quantity * p.avgPrice, 0)
+  const totalReturnDollar = positions.reduce((sum, p) => {
+    const gainPerUnit =
+      p.side === "short" ? p.avgPrice - p.currentPrice : p.currentPrice - p.avgPrice
+    return sum + gainPerUnit * p.quantity
+  }, 0)
+  const totalReturnPercent = costBasis !== 0 ? (totalReturnDollar / costBasis) * 100 : 0
 
   const sortedPositions = useMemo(() => {
     if (!sort) return positions
@@ -181,8 +183,11 @@ function HoldingsTable({ positions }: { positions: HoldingPosition[] }) {
       <CardHeader>
         <CardTitle>Holdings</CardTitle>
         <CardDescription>{formatCurrency(marketValue)} market value</CardDescription>
-        <CardAction>
-          <TotalReturn dollar={todayChangeDollar} percent={todayChangePercent} />
+        <CardAction className="flex flex-col items-end gap-0.5">
+          <span className="text-[11px] font-medium tracking-wide text-muted-foreground uppercase">
+            Total Return
+          </span>
+          <TotalReturn dollar={totalReturnDollar} percent={totalReturnPercent} />
         </CardAction>
       </CardHeader>
       <CardContent>
@@ -271,11 +276,12 @@ function OptionsTable({ positions }: { positions: OptionPosition[] }) {
     (sum, p) => sum + p.contracts * p.currentPrice,
     0
   )
-  const todayChangeDollar = positions.reduce(
-    (sum, p) => sum + p.contracts * p.currentPrice * (p.dayChangePercent / 100),
+  const costBasis = positions.reduce((sum, p) => sum + p.contracts * p.avgPrice, 0)
+  const totalReturnDollar = positions.reduce(
+    (sum, p) => sum + (p.currentPrice - p.avgPrice) * p.contracts,
     0
   )
-  const todayChangePercent = marketValue !== 0 ? (todayChangeDollar / marketValue) * 100 : 0
+  const totalReturnPercent = costBasis !== 0 ? (totalReturnDollar / costBasis) * 100 : 0
 
   const sortedPositions = useMemo(() => {
     if (!sort) return positions
@@ -298,8 +304,11 @@ function OptionsTable({ positions }: { positions: OptionPosition[] }) {
       <CardHeader>
         <CardTitle>Options</CardTitle>
         <CardDescription>{formatCurrency(marketValue)} market value</CardDescription>
-        <CardAction>
-          <TotalReturn dollar={todayChangeDollar} percent={todayChangePercent} />
+        <CardAction className="flex flex-col items-end gap-0.5">
+          <span className="text-[11px] font-medium tracking-wide text-muted-foreground uppercase">
+            Total Return
+          </span>
+          <TotalReturn dollar={totalReturnDollar} percent={totalReturnPercent} />
         </CardAction>
       </CardHeader>
       <CardContent>

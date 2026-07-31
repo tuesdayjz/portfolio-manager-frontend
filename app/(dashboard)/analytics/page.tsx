@@ -77,17 +77,26 @@ function formatTooltipDate(dateStr: string) {
   }).format(date)
 }
 
-function Delta({ dollar, percent }: { dollar: number; percent: number }) {
+function Delta({
+  dollar,
+  percent,
+  size = "sm",
+}: {
+  dollar: number
+  percent: number
+  size?: "sm" | "lg"
+}) {
   const positive = dollar >= 0
   const Icon = positive ? TrendingUp : TrendingDown
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1 text-sm font-medium",
+        "inline-flex items-center gap-1 font-medium",
+        size === "lg" ? "text-xl" : "text-sm",
         positive ? "text-chart-3" : "text-destructive"
       )}
     >
-      <Icon className="size-3.5 shrink-0" />
+      <Icon className={cn("shrink-0", size === "lg" ? "size-4" : "size-3.5")} />
       {formatSigned(dollar, formatCurrency)} ({formatSigned(percent, (v) => `${v.toFixed(2)}%`)})
     </span>
   )
@@ -106,13 +115,18 @@ function StatTile({
     <Card size="sm">
       <CardHeader>
         <CardDescription>{label}</CardDescription>
-        <CardTitle className="text-xl">{value}</CardTitle>
+        {delta ? (
+          <CardTitle>
+            <Delta dollar={delta.dollar} percent={delta.percent} size="lg" />
+          </CardTitle>
+        ) : (
+            <CardTitle className="text-xl">
+              <span className="text-xl font-medium">
+                {value}
+              </span>
+            </CardTitle>
+        )}
       </CardHeader>
-      {delta && (
-        <CardContent>
-          <Delta dollar={delta.dollar} percent={delta.percent} />
-        </CardContent>
-      )}
     </Card>
   )
 }

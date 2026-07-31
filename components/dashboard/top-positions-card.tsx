@@ -4,7 +4,9 @@ import { useMemo, useState } from "react"
 import Link from "next/link"
 import { Briefcase } from "lucide-react"
 
-import { topPositions, totalPositionsCount } from "@/lib/mock-data"
+import { topPositions, totalPositionsCount } from "@/lib/mock/dashboard"
+import { useSession } from "@/lib/auth"
+import { usePortfolioQuery } from "@/hooks/use-portfolio-query"
 import { formatCurrency, formatPercent } from "@/lib/format"
 import { matchesQuery } from "@/lib/search"
 import { cn } from "@/lib/utils"
@@ -27,13 +29,29 @@ import {
 
 export function TopPositionsCard() {
   const [query, setQuery] = useState("")
+  const user = useSession()
+  const { data } = usePortfolioQuery(!!user, (api) => api.getHoldings({ perPage: 100 }))
+  const positions = data
+    ? data.items
+        .map((holding) => ({
+          symbol: holding.symbol,
+          name: holding.name,
+          qty: holding.quantity,
+          price: holding.current_price,
+          marketValue: holding.market_value,
+          changePct: holding.day_change_percent,
+        }))
+        .sort((a, b) => b.marketValue - a.marketValue)
+        .slice(0, 5)
+    : topPositions
+  const totalCount = data?.pagination.total_items ?? totalPositionsCount
 
   const filteredPositions = useMemo(
     () =>
-      topPositions.filter((position) =>
+      positions.filter((position) =>
         matchesQuery(query, position.symbol, position.name)
       ),
-    [query]
+    [positions, query]
   )
 
   return (
@@ -114,7 +132,7 @@ export function TopPositionsCard() {
       </CardContent>
       <CardFooter className="flex items-center justify-between text-xs text-muted-foreground">
         <span>
-          Showing {filteredPositions.length} of {totalPositionsCount} positions
+          Showing {filteredPositions.length} of {totalCount} positions
         </span>
         <Link
           href="/positions"

@@ -24,13 +24,14 @@ import { Tabs, TabsIndicator, TabsList, TabsTab } from "@/components/ui/tabs"
 import { cn } from "@/lib/utils"
 import { matchesQuery } from "@/lib/search"
 import { useSession } from "@/lib/auth"
+import { usePortfolioQuery } from "@/hooks/use-portfolio-query"
 import { LoginPromptOverlay } from "@/components/layout/login-prompt-overlay"
 import {
   TOTAL_TRANSACTIONS_COUNT,
   TRANSACTIONS,
   type TransactionRecord,
   type TransactionType,
-} from "@/lib/transactions-data"
+} from "@/lib/mock/transactions"
 
 function formatCurrency(value: number) {
   return value.toLocaleString("en-US", {
@@ -235,17 +236,34 @@ export default function TransactionsPage() {
   const [query, setQuery] = useState("")
   const [typeFilter, setTypeFilter] = useState<"all" | TransactionType>("all")
   const [sort, setSort] = useState<SortState>(DEFAULT_SORT)
+  const { data } = usePortfolioQuery(isLoggedIn, (api) => api.getTransactions({ perPage: 100 }))
+  const transactions: TransactionRecord[] = data
+    ? data.items.map((transaction) => ({
+        id: String(transaction.transaction_id),
+        date: transaction.date.slice(0, 10),
+        type: transaction.transaction_type.toUpperCase() as TransactionType,
+        symbol: transaction.symbol,
+        name: transaction.name,
+        assetClass: "equities",
+        quantity: transaction.quantity,
+        price: transaction.price,
+        total: transaction.total_amount,
+        realizedGainDollar: transaction.realized_pl ?? null,
+        realizedGainPercent: transaction.realized_pl_percent ?? null,
+      }))
+    : TRANSACTIONS
+  const totalTransactionsCount = data?.pagination.total_items ?? TOTAL_TRANSACTIONS_COUNT
 
   function handleSort(key: SortKey) {
     setSort((current) => nextSortState(current, key))
   }
 
   const filteredTransactions = useMemo(() => {
-    return TRANSACTIONS.filter((tx) => {
+    return transactions.filter((tx) => {
       if (typeFilter !== "all" && tx.type !== typeFilter) return false
       return matchesQuery(query, tx.symbol, tx.name, tx.type)
     })
-  }, [query, typeFilter])
+  }, [transactions, query, typeFilter])
 
   const sortedTransactions = useMemo(() => {
     const factor = sort.dir === "asc" ? 1 : -1
@@ -313,7 +331,7 @@ export default function TransactionsPage() {
           <CardHeader>
             <CardTitle>All Transactions</CardTitle>
             <CardDescription>
-              {filteredTransactions.length} of {TOTAL_TRANSACTIONS_COUNT}{" "}
+              {filteredTransactions.length} of {totalTransactionsCount}{" "}
               transactions
             </CardDescription>
             <CardAction className="flex items-center gap-3">

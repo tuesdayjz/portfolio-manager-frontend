@@ -22,6 +22,7 @@ import { SegmentedToggle } from "@/components/trade/segmented-toggle"
 import { Tabs, TabsIndicator, TabsList, TabsTab } from "@/components/ui/tabs"
 import { cn } from "@/lib/utils"
 import { useSession } from "@/lib/auth"
+import { usePortfolioQuery } from "@/hooks/use-portfolio-query"
 import { LoginPromptOverlay } from "@/components/layout/login-prompt-overlay"
 import {
   PERFORMANCE_TABS,
@@ -30,7 +31,7 @@ import {
   getPerformanceSummary,
   type PerformanceSeriesKey,
   type TimeRangeKey,
-} from "@/lib/performance-data"
+} from "@/lib/mock/performance"
 
 function formatCurrency(value: number) {
   return value.toLocaleString("en-US", {
@@ -139,17 +140,20 @@ function PerformanceChart({
   seriesKey,
   range,
   onRangeChange,
+  points,
 }: {
   seriesKey: PerformanceSeriesKey
   range: TimeRangeKey
   onRangeChange: (range: TimeRangeKey) => void
+  points?: { date: string; value: number }[]
 }) {
   const rangeConfig = TIME_RANGES.find((r) => r.value === range) ?? TIME_RANGES[0]
 
-  const slice = useMemo(
+  const mockSlice = useMemo(
     () => getPerformanceSlice(seriesKey, rangeConfig.days),
     [seriesKey, rangeConfig.days]
   )
+  const slice = { points: points ?? mockSlice.points }
 
   return (
     <Card>
@@ -223,13 +227,37 @@ function PerformanceChart({
 
 function PerformancePanel({ seriesKey }: { seriesKey: PerformanceSeriesKey }) {
   const [range, setRange] = useState<TimeRangeKey>("3M")
+  const user = useSession()
+  const apiRange: Record<TimeRangeKey, "1w" | "1m" | "3m" | "1y" | "all"> = {
+    "1W": "1w", "1M": "1m", "3M": "3m", YTD: "1y", "1Y": "1y", ALL: "all",
+  }
+  const { data } = usePortfolioQuery(
+    !!user,
+    (api) => api.getPerformance(apiRange[range]),
+    [range]
+  )
 
-  const summary = useMemo(() => getPerformanceSummary(seriesKey), [seriesKey])
   const rangeConfig = TIME_RANGES.find((r) => r.value === range) ?? TIME_RANGES[0]
-  const slice = useMemo(
+  const mockSlice = useMemo(
     () => getPerformanceSlice(seriesKey, rangeConfig.days),
     [seriesKey, rangeConfig.days]
   )
+  const summary = data
+    ? {
+        marketValue: data.metrics.portfolio_value,
+        todayChangeDollar: data.metrics.today.amount,
+        todayChangePercent: data.metrics.today.percent,
+        totalReturnDollar: data.metrics.total_return.amount,
+        totalReturnPercent: data.metrics.total_return.percent,
+      }
+    : getPerformanceSummary(seriesKey)
+  const slice = data
+    ? {
+        points: data.points.map((point) => ({ date: point.date, value: point.total_market_value })),
+        periodReturnDollar: data.metrics.return.amount,
+        periodReturnPercent: data.metrics.return.percent,
+      }
+    : mockSlice
 
   return (
     <div className="flex flex-col gap-4">
@@ -251,7 +279,7 @@ function PerformancePanel({ seriesKey }: { seriesKey: PerformanceSeriesKey }) {
           delta={{ dollar: summary.totalReturnDollar, percent: summary.totalReturnPercent }}
         />
       </div>
-      <PerformanceChart seriesKey={seriesKey} range={range} onRangeChange={setRange} />
+      <PerformanceChart seriesKey={seriesKey} range={range} onRangeChange={setRange} points={data ? slice.points : undefined} />
     </div>
   )
 }

@@ -5,19 +5,10 @@ import { buttonVariants } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { SidebarTrigger } from "@/components/ui/sidebar"
 import { ThemeToggle } from "@/components/layout/theme-toggle"
-import { assetAllocation } from "@/lib/mock-data"
+import { portfolioTotalValue } from "@/lib/mock/dashboard"
+import { getPerformanceSummary } from "@/lib/mock/performance"
 
-const portfolio = {
-  totalValue: 1_247_832.5,
-  totalReturnPct: 12.4,
-}
-
-// Uninvested cash is tracked as a slice of the overall allocation mix, so
-// derive the dollar balance from that percentage instead of hardcoding it
-// separately (and risking it drifting out of sync with the allocation chart).
-const cashAllocationPct =
-  assetAllocation.find((slice) => slice.label === "Cash")?.pct ?? 0
-const cashBalance = portfolio.totalValue * (cashAllocationPct / 100)
+const portfolio = getPerformanceSummary("all")
 
 const currencyFormatter = new Intl.NumberFormat("en-US", {
   style: "currency",
@@ -39,7 +30,7 @@ export function SiteHeader() {
             Total Portfolio Value
           </span>
           <span className="text-sm font-semibold tabular-nums">
-            {currencyFormatter.format(portfolio.totalValue)}
+            {currencyFormatter.format(portfolioTotalValue)}
           </span>
         </div>
         <div className="flex flex-col">
@@ -47,7 +38,7 @@ export function SiteHeader() {
             Total Balance
           </span>
           <span className="text-sm font-semibold tabular-nums">
-            {currencyFormatter.format(cashBalance)}
+            {currencyFormatter.format(0)}
           </span>
         </div>
         <div className="flex flex-col">
@@ -55,7 +46,7 @@ export function SiteHeader() {
             Total Return
           </span>
           <span className="flex items-center gap-1 text-sm font-semibold text-emerald-600 tabular-nums dark:text-emerald-400">
-            <TrendingUp className="size-3.5" />+{portfolio.totalReturnPct}%
+            <TrendingUp className="size-3.5" />+{portfolio.totalReturnPercent.toFixed(1)}%
           </span>
         </div>
       </div>

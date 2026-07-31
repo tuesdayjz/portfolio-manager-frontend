@@ -15,7 +15,9 @@ import { LineChart as LineChartIcon } from "lucide-react"
 import {
   performanceBenchmarkLabel,
   performanceHistory,
-} from "@/lib/mock-data"
+} from "@/lib/mock/dashboard"
+import { useSession } from "@/lib/auth"
+import { usePortfolioQuery } from "@/hooks/use-portfolio-query"
 import { formatCompactCurrency, formatCurrency } from "@/lib/format"
 import {
   Card,
@@ -46,6 +48,17 @@ function PerformanceTooltip({
 }
 
 export function PerformanceSummaryCard() {
+  const user = useSession()
+  const { data } = usePortfolioQuery(!!user, (api) => api.getPerformance("6m"))
+  const history = data
+    ? data.points.map((point) => ({
+        month: new Intl.DateTimeFormat("en-US", { month: "short" }).format(
+          new Date(`${point.date}T00:00:00Z`)
+        ),
+        value: point.total_market_value,
+      }))
+    : performanceHistory
+
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
@@ -61,7 +74,7 @@ export function PerformanceSummaryCard() {
       <CardContent className="flex grow h-60">
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart
-            data={performanceHistory}
+            data={history}
             margin={{ top: 8, right: 8, left: 0, bottom: 0 }}
           >
             <defs>

@@ -3,7 +3,7 @@ import {
   HOLDINGS,
   OPTION_POSITIONS,
   type AssetClass,
-} from "@/lib/positions-data"
+} from "@/lib/mock/positions"
 
 export type PerformanceSeriesKey = "all" | AssetClass
 

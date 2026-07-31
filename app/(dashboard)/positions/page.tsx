@@ -24,6 +24,7 @@ import { Tabs, TabsIndicator, TabsList, TabsTab } from "@/components/ui/tabs"
 import { cn } from "@/lib/utils"
 import { matchesQuery } from "@/lib/search"
 import { useSession } from "@/lib/auth"
+import { usePortfolioQuery } from "@/hooks/use-portfolio-query"
 import { LoginPromptOverlay } from "@/components/layout/login-prompt-overlay"
 import {
   ASSET_CLASSES,
@@ -32,7 +33,7 @@ import {
   type AssetClass,
   type HoldingPosition,
   type OptionPosition,
-} from "@/lib/positions-data"
+} from "@/lib/mock/positions"
 
 function formatCurrency(value: number) {
   return value.toLocaleString("en-US", {
@@ -63,6 +64,14 @@ function DayChange({ percent }: { percent: number }) {
       {percent.toFixed(2)}%
     </span>
   )
+}
+
+function assetClassFromApi(assetType: string): AssetClass {
+  const type = assetType.toLowerCase()
+  if (type.includes("fx") || type.includes("forex") || type.includes("currency")) return "fx"
+  if (type.includes("bond") || type.includes("fixed")) return "fixed-income"
+  if (type.includes("commodity") || type.includes("metal") || type.includes("energy")) return "commodities"
+  return "equities"
 }
 
 function TotalReturn({ dollar, percent }: { dollar: number; percent: number }) {
@@ -418,14 +427,33 @@ export default function PositionsPage() {
   const [query, setQuery] = useState("")
   const user = useSession()
   const isLoggedIn = !!user
+  const { data } = usePortfolioQuery(isLoggedIn, (api) => api.getHoldings({ perPage: 100 }))
+  const holdings = data
+    ? data.items.map((holding) => ({
+        symbol: holding.symbol,
+        name: holding.name,
+        assetClass: assetClassFromApi(holding.asset_type),
+        side: "long" as const,
+        quantity: holding.quantity,
+        avgPrice: holding.average_purchase_price,
+        currentPrice: holding.current_price,
+        dayChangePercent: holding.day_change_percent,
+      }))
+    : HOLDINGS
+  // The current backend contract exposes holdings only; keep the existing sample
+  // option positions for visitors until options are added to that contract.
+  const optionPositions = useMemo(
+    () => (isLoggedIn ? [] : OPTION_POSITIONS),
+    [isLoggedIn]
+  )
 
   const filteredHoldings = useMemo(
-    () => HOLDINGS.filter((p) => matchesQuery(query, p.symbol, p.name)),
-    [query]
+    () => holdings.filter((p) => matchesQuery(query, p.symbol, p.name)),
+    [holdings, query]
   )
   const filteredOptions = useMemo(
-    () => OPTION_POSITIONS.filter((p) => matchesQuery(query, p.symbol, p.name)),
-    [query]
+    () => optionPositions.filter((p) => matchesQuery(query, p.symbol, p.name)),
+    [optionPositions, query]
   )
 
   return (

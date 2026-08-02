@@ -25,6 +25,7 @@ import { cn } from "@/lib/utils"
 import { matchesQuery } from "@/lib/search"
 import { useSession } from "@/lib/auth"
 import { usePortfolioQuery } from "@/hooks/use-portfolio-query"
+import { deltaBadgeClass, tradeBadgeClass } from "@/lib/trade-status"
 import { LoginPromptOverlay } from "@/components/layout/login-prompt-overlay"
 import {
   ASSET_CLASSES,
@@ -56,8 +57,8 @@ function DayChange({ percent }: { percent: number }) {
   return (
     <span
       className={cn(
-        "font-medium",
-        positive ? "text-chart-3" : "text-destructive"
+        "inline-flex rounded-full px-2 py-0.5 text-xs font-medium tabular-nums",
+        deltaBadgeClass(percent)
       )}
     >
       {positive ? "+" : ""}
@@ -246,13 +247,7 @@ function HoldingsTable({ positions }: { positions: HoldingPosition[] }) {
                       <div className="text-xs text-muted-foreground">{position.name}</div>
                     </td>
                     <td className="py-1.5 pr-4">
-                      <Badge
-                        variant="outline"
-                        className={cn(
-                          "capitalize",
-                          position.side === "short" && "border-destructive/30 text-destructive"
-                        )}
-                      >
+                      <Badge variant="secondary" className={`capitalize ${tradeBadgeClass}`}>
                         {position.side}
                       </Badge>
                     </td>
@@ -370,13 +365,7 @@ function OptionsTable({ positions }: { positions: OptionPosition[] }) {
                       <div className="text-xs text-muted-foreground">{position.name}</div>
                     </td>
                     <td className="py-1.5 pr-4">
-                      <Badge
-                        variant="outline"
-                        className={cn(
-                          "capitalize",
-                          position.optionType === "put" && "border-destructive/30 text-destructive"
-                        )}
-                      >
+                      <Badge variant="outline" className="capitalize">
                         {position.optionType}
                       </Badge>
                     </td>

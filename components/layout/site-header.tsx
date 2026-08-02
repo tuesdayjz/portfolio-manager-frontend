@@ -45,7 +45,7 @@ export function SiteHeader() {
           <span className="text-muted-foreground text-[11px] font-medium tracking-wide uppercase">
             Total Return
           </span>
-          <span className="flex items-center gap-1 text-sm font-semibold text-emerald-600 tabular-nums dark:text-emerald-400">
+          <span className="flex items-center gap-1 text-sm font-semibold text-primary tabular-nums">
             <TrendingUp className="size-3.5" />+{portfolio.totalReturnPercent.toFixed(1)}%
           </span>
         </div>

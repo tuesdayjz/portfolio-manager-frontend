@@ -7,9 +7,10 @@ import { Briefcase } from "lucide-react"
 import { topPositions, totalPositionsCount } from "@/lib/mock/dashboard"
 import { useSession } from "@/lib/auth"
 import { usePortfolioQuery } from "@/hooks/use-portfolio-query"
-import { formatCurrency, formatPercent } from "@/lib/format"
+import { formatCurrency } from "@/lib/format"
 import { matchesQuery } from "@/lib/search"
 import { cn } from "@/lib/utils"
+import { deltaBadgeClass } from "@/lib/trade-status"
 import {
   Card,
   CardContent,
@@ -115,13 +116,12 @@ export function TopPositionsCard() {
                   <TableCell className="pr-(--card-spacing) text-right">
                     <span
                       className={cn(
-                        "inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium tabular-nums",
-                        position.changePct >= 0
-                          ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
-                          : "bg-destructive/10 text-destructive"
+                        "inline-flex rounded-full px-2 py-0.5 text-xs font-medium tabular-nums",
+                        deltaBadgeClass(position.changePct)
                       )}
                     >
-                      {formatPercent(position.changePct)}
+                      {position.changePct >= 0 ? "+" : ""}
+                      {position.changePct.toFixed(2)}%
                     </span>
                   </TableCell>
                 </TableRow>

@@ -64,7 +64,7 @@ export function EquityOrderForm({
             onChange={setAction}
             options={[
               { value: "buy", label: "Buy" },
-              { value: "sell", label: "Sell", activeClassName: "text-destructive" },
+              { value: "sell", label: "Sell" },
             ]}
           />
         </div>
@@ -75,7 +75,7 @@ export function EquityOrderForm({
             onChange={setPosition}
             options={[
               { value: "long", label: "Long" },
-              { value: "short", label: "Short", activeClassName: "text-destructive" },
+              { value: "short", label: "Short" },
             ]}
           />
         </div>
@@ -128,7 +128,7 @@ export function EquityOrderForm({
         </span>
       </div>
 
-      <Button type="submit" disabled={!canSubmit}>
+      <Button type="submit" variant={action === "sell" ? "destructive" : "default"} disabled={!canSubmit}>
         Review &amp; Submit Order
       </Button>
 

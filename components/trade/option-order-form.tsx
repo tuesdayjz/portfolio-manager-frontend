@@ -169,7 +169,7 @@ export function OptionOrderForm({
             }}
             options={[
               { value: "call", label: "Call" },
-              { value: "put", label: "Put", activeClassName: "text-destructive" },
+              { value: "put", label: "Put" },
             ]}
           />
         </div>
@@ -282,7 +282,7 @@ export function OptionOrderForm({
             onChange={setAction}
             options={[
               { value: "buy", label: "Buy" },
-              { value: "sell", label: "Sell", activeClassName: "text-destructive" },
+              { value: "sell", label: "Sell" },
             ]}
           />
         </div>
@@ -293,7 +293,7 @@ export function OptionOrderForm({
             onChange={setPosition}
             options={[
               { value: "long", label: "Long" },
-              { value: "short", label: "Short", activeClassName: "text-destructive" },
+              { value: "short", label: "Short" },
             ]}
           />
         </div>
@@ -318,7 +318,7 @@ export function OptionOrderForm({
         </span>
       </div>
 
-      <Button type="submit" disabled={!canSubmit}>
+      <Button type="submit" variant={action === "sell" ? "destructive" : "default"} disabled={!canSubmit}>
         Review &amp; Submit Order
       </Button>
 

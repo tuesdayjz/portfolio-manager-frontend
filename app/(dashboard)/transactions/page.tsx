@@ -25,6 +25,7 @@ import { cn } from "@/lib/utils"
 import { matchesQuery } from "@/lib/search"
 import { useSession } from "@/lib/auth"
 import { usePortfolioQuery } from "@/hooks/use-portfolio-query"
+import { tradeBadgeClass } from "@/lib/trade-status"
 import { LoginPromptOverlay } from "@/components/layout/login-prompt-overlay"
 import {
   TOTAL_TRANSACTIONS_COUNT,
@@ -195,10 +196,7 @@ function TransactionsTable({
                 {formatDate(tx.date)}
               </td>
               <td className="py-2 pr-4 pl-4">
-                <Badge
-                  variant={tx.type === "BUY" ? "secondary" : "outline"}
-                  className={tx.type === "BUY" ? "text-primary" : "text-destructive"}
-                >
+                <Badge variant="secondary" className={tradeBadgeClass}>
                   {tx.type}
                 </Badge>
               </td>

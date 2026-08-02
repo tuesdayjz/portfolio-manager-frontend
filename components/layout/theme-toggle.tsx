@@ -3,12 +3,13 @@
 import { Moon, Sun } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
+import { THEME_COOKIE_NAME } from "@/lib/theme"
 
-const THEME_STORAGE_KEY = "pm_theme"
+const THEME_COOKIE_MAX_AGE_SECONDS = 60 * 60 * 24 * 365
 
 function toggleTheme() {
   const isDark = document.documentElement.classList.toggle("dark")
-  localStorage.setItem(THEME_STORAGE_KEY, isDark ? "dark" : "light")
+  document.cookie = `${THEME_COOKIE_NAME}=${isDark ? "dark" : "light"}; path=/; max-age=${THEME_COOKIE_MAX_AGE_SECONDS}; samesite=lax`
 }
 
 export function ThemeToggle() {

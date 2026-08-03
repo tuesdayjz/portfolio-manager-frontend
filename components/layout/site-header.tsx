@@ -27,19 +27,17 @@ export function SiteHeader() {
   const [summary, setSummary] = useState<PortfolioSummary | null>(null)
 
   useEffect(() => {
+    let cancelled = false
+
     if (!user) {
-      setSummary(null)
       return
     }
 
-    let cancelled = false
     getPortfolioSummary()
       .then((result) => {
         if (!cancelled) setSummary(result)
       })
       .catch(() => {
-        // No portfolio yet, or the backend is unreachable — fall back to
-        // sample data below rather than showing a broken header.
         if (!cancelled) setSummary(null)
       })
     return () => {

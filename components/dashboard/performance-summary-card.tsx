@@ -16,6 +16,7 @@ import {
   performanceBenchmarkLabel,
   performanceHistory,
 } from "@/lib/mock/dashboard"
+import { Skeleton } from "@/components/ui/skeleton"
 import { useSession } from "@/lib/auth"
 import { usePortfolioQuery } from "@/hooks/use-portfolio-query"
 import { formatCompactCurrency, formatCurrency } from "@/lib/format"
@@ -49,7 +50,10 @@ function PerformanceTooltip({
 
 export function PerformanceSummaryCard() {
   const user = useSession()
-  const { data } = usePortfolioQuery(!!user, (api) => api.getPerformance("6m"))
+  const isLoggedIn = !!user
+  const { data, isLoading } = usePortfolioQuery(isLoggedIn, (api) => api.getPerformance("6m"))
+
+  // Only use mock data for non-logged-in users
   const history = data
     ? data.points.map((point) => ({
         month: new Intl.DateTimeFormat("en-US", { month: "short" }).format(
@@ -57,7 +61,7 @@ export function PerformanceSummaryCard() {
         ),
         value: point.total_market_value,
       }))
-    : performanceHistory
+    : isLoggedIn ? [] : performanceHistory
 
   return (
     <Card>
@@ -72,6 +76,13 @@ export function PerformanceSummaryCard() {
         </span>
       </CardHeader>
       <CardContent className="flex grow h-60">
+        {isLoggedIn && isLoading ? (
+          <Skeleton className="h-full w-full rounded-md" />
+        ) : history.length === 0 ? (
+          <div className="flex h-full w-full items-center justify-center text-sm text-muted-foreground">
+            No performance data yet.
+          </div>
+        ) : (
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart
             data={history}
@@ -113,6 +124,7 @@ export function PerformanceSummaryCard() {
             />
           </AreaChart>
         </ResponsiveContainer>
+        )}
       </CardContent>
       <CardFooter className="flex items-center justify-between text-xs text-muted-foreground">
         <span>Benchmark: {performanceBenchmarkLabel}</span>

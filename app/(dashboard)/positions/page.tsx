@@ -1,7 +1,8 @@
-﻿"use client"
+"use client"
 
 import { useMemo, useState } from "react"
 import {
+  AlertCircle,
   ChevronDown,
   ChevronUp,
   ChevronsUpDown,
@@ -20,6 +21,7 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
+import { Skeleton } from "@/components/ui/skeleton"
 import { Tabs, TabsIndicator, TabsList, TabsTab } from "@/components/ui/tabs"
 import { cn } from "@/lib/utils"
 import { matchesQuery } from "@/lib/search"
@@ -396,12 +398,16 @@ function AssetClassPanel({
   holdings,
   optionPositions,
 }: {
-  assetClass: AssetClass
+  assetClass: "all" | AssetClass
   holdings: HoldingPosition[]
   optionPositions: OptionPosition[]
 }) {
-  const holdingsInClass = holdings.filter((p) => p.assetClass === assetClass)
-  const optionsInClass = optionPositions.filter((p) => p.assetClass === assetClass)
+  const holdingsInClass = assetClass === "all"
+    ? holdings
+    : holdings.filter((p) => p.assetClass === assetClass)
+  const optionsInClass = assetClass === "all"
+    ? optionPositions
+    : optionPositions.filter((p) => p.assetClass === assetClass)
 
   return (
     <div className="flex flex-col gap-4">
@@ -412,23 +418,27 @@ function AssetClassPanel({
 }
 
 export default function PositionsPage() {
-  const [assetClass, setAssetClass] = useState<AssetClass>(ASSET_CLASSES[0].value)
+  const [assetClass, setAssetClass] = useState<"all" | AssetClass>("all")
   const [query, setQuery] = useState("")
   const user = useSession()
   const isLoggedIn = !!user
-  const { data } = usePortfolioQuery(isLoggedIn, (api) => api.getHoldings({ perPage: 100 }))
-  const holdings = data
-    ? data.items.map((holding) => ({
-        symbol: holding.ticker,
-        name: holding.name,
-        assetClass: assetClassFromApi(holding.asset_type),
-        side: "long" as const,
-        quantity: holding.quantity,
-        avgPrice: holding.average_purchase_price,
-        currentPrice: holding.current_price,
-        dayChangePercent: holding.today_return_percent,
-      }))
-    : HOLDINGS
+  const { data, isLoading, error } = usePortfolioQuery(isLoggedIn, (api) => api.getHoldings({ perPage: 100 }))
+
+  // Only use mock data for non-logged-in users
+  const holdings = useMemo(() => {
+    return data
+      ? data.items.map((holding) => ({
+          symbol: holding.ticker,
+          name: holding.name,
+          assetClass: assetClassFromApi(holding.asset_type),
+          side: "long" as const,
+          quantity: holding.quantity,
+          avgPrice: holding.average_purchase_price,
+          currentPrice: holding.current_price,
+          dayChangePercent: holding.today_return_percent,
+        }))
+      : isLoggedIn ? [] : HOLDINGS
+  }, [data, isLoggedIn])
   // The current backend contract exposes holdings only; keep the existing sample
   // option positions for visitors until options are added to that contract.
   const optionPositions = useMemo(
@@ -436,13 +446,24 @@ export default function PositionsPage() {
     [isLoggedIn]
   )
 
+  // Filter by asset class
+  const holdingsByClass = useMemo(() => {
+    if (assetClass === "all") return holdings
+    return holdings.filter((p) => p.assetClass === assetClass)
+  }, [holdings, assetClass])
+
+  const optionsByClass = useMemo(() => {
+    if (assetClass === "all") return optionPositions
+    return optionPositions.filter((p) => p.assetClass === assetClass)
+  }, [optionPositions, assetClass])
+
   const filteredHoldings = useMemo(
-    () => holdings.filter((p) => matchesQuery(query, p.symbol, p.name)),
-    [holdings, query]
+    () => holdingsByClass.filter((p) => matchesQuery(query, p.symbol, p.name)),
+    [holdingsByClass, query]
   )
   const filteredOptions = useMemo(
-    () => optionPositions.filter((p) => matchesQuery(query, p.symbol, p.name)),
-    [optionPositions, query]
+    () => optionsByClass.filter((p) => matchesQuery(query, p.symbol, p.name)),
+    [optionsByClass, query]
   )
 
   return (
@@ -477,11 +498,14 @@ export default function PositionsPage() {
 
         <Tabs
           value={assetClass}
-          onValueChange={(value) => setAssetClass(value as AssetClass)}
+          onValueChange={(value) => setAssetClass(value as "all" | AssetClass)}
           className="flex flex-col gap-6"
         >
           <TabsList>
             <TabsIndicator />
+            <TabsTab key="all" value="all">
+              All Positions
+            </TabsTab>
             {ASSET_CLASSES.map((option) => (
               <TabsTab key={option.value} value={option.value}>
                 {option.label}
@@ -490,10 +514,36 @@ export default function PositionsPage() {
           </TabsList>
         </Tabs>
 
-        {filteredHoldings.length === 0 && filteredOptions.length === 0 ? (
-          <p className="py-12 text-center text-sm text-muted-foreground">
-            No positions match &quot;{query}&quot;.
-          </p>
+        {isLoggedIn && isLoading ? (
+          <div className="flex flex-col gap-4 py-4">
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-64 w-full rounded-xl" />
+          </div>
+        ) : isLoggedIn && error ? (
+          <Card className="border-destructive">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-destructive">
+                <AlertCircle className="size-4" />
+                Failed to load positions
+              </CardTitle>
+              <CardDescription>{error.message}</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground">
+                Please check your connection and try again.
+              </p>
+            </CardContent>
+          </Card>
+        ) : filteredHoldings.length === 0 && filteredOptions.length === 0 ? (
+          query ? (
+            <p className="py-12 text-center text-sm text-muted-foreground">
+              No positions match &quot;{query}&quot;.
+            </p>
+          ) : (
+            <p className="py-12 text-center text-sm text-muted-foreground">
+              No positions in this asset class.
+            </p>
+          )
         ) : (
           <AssetClassPanel
             assetClass={assetClass}

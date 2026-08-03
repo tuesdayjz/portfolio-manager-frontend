@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react"
 import {
+  AlertCircle,
   ChevronDown,
   ChevronUp,
   ChevronsUpDown,
@@ -19,6 +20,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
+import { Skeleton } from "@/components/ui/skeleton"
 import { Input } from "@/components/ui/input"
 import { Tabs, TabsIndicator, TabsList, TabsTab } from "@/components/ui/tabs"
 import { cn } from "@/lib/utils"
@@ -28,11 +30,12 @@ import { usePortfolioQuery } from "@/hooks/use-portfolio-query"
 import { tradeBadgeClass } from "@/lib/trade-status"
 import { LoginPromptOverlay } from "@/components/layout/login-prompt-overlay"
 import {
-  TOTAL_TRANSACTIONS_COUNT,
   TRANSACTIONS,
+  TOTAL_TRANSACTIONS_COUNT,
   type TransactionRecord,
   type TransactionType,
 } from "@/lib/mock/transactions"
+import type { AssetClass } from "@/lib/mock/positions"
 
 function formatCurrency(value: number) {
   return value.toLocaleString("en-US", {
@@ -57,6 +60,14 @@ function formatDate(iso: string) {
     day: "2-digit",
     year: "numeric",
   })
+}
+
+function assetClassFromApi(assetType: string): string {
+  const type = assetType.toLowerCase()
+  if (type.includes("fx") || type.includes("forex") || type.includes("currency")) return "fx"
+  if (type.includes("bond") || type.includes("fixed")) return "fixed-income"
+  if (type.includes("commodity") || type.includes("metal") || type.includes("energy")) return "commodities"
+  return "equities"
 }
 
 function GainLoss({
@@ -234,22 +245,27 @@ export default function TransactionsPage() {
   const [query, setQuery] = useState("")
   const [typeFilter, setTypeFilter] = useState<"all" | TransactionType>("all")
   const [sort, setSort] = useState<SortState>(DEFAULT_SORT)
-  const { data } = usePortfolioQuery(isLoggedIn, (api) => api.getTransactions({ perPage: 100 }))
-  const transactions: TransactionRecord[] = data
-    ? data.items.map((transaction) => ({
+  const { data, isLoading, error } = usePortfolioQuery(isLoggedIn, (api) => api.getTransactions({ perPage: 100 }))
+
+  // Only use mock data for non-logged-in users
+  const transactions = useMemo<TransactionRecord[]>(() => {
+    if (data) {
+      return data.items.map((transaction) => ({
         id: String(transaction.transaction_id),
         date: transaction.date.slice(0, 10),
         type: transaction.transaction_type.toUpperCase() as TransactionType,
         symbol: transaction.symbol,
         name: transaction.name,
-        assetClass: "equities",
+        assetClass: assetClassFromApi(transaction.asset_type) as AssetClass,
         quantity: transaction.quantity,
         price: transaction.price,
         total: transaction.total_amount,
         realizedGainDollar: transaction.realized_pl ?? null,
         realizedGainPercent: transaction.realized_pl_percent ?? null,
       }))
-    : TRANSACTIONS
+    }
+    return isLoggedIn ? [] : TRANSACTIONS
+  }, [data, isLoggedIn])
   const totalTransactionsCount = data?.pagination.total_items ?? TOTAL_TRANSACTIONS_COUNT
 
   function handleSort(key: SortKey) {
@@ -321,52 +337,97 @@ export default function TransactionsPage() {
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search by symbol or name..."
               className="pl-8"
+              disabled={isLoading}
             />
           </div>
         </div>
 
-        <Card size="sm">
-          <CardHeader>
-            <CardTitle>All Transactions</CardTitle>
-            <CardDescription>
-              {filteredTransactions.length} of {totalTransactionsCount}{" "}
-              transactions
-            </CardDescription>
-            <CardAction className="flex items-center gap-3">
-              <span className="hidden text-sm text-muted-foreground sm:inline">
-                Realized P&amp;L
-              </span>
-              <GainLoss dollar={realizedGainDollar} percent={realizedGainPercent} />
-            </CardAction>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-4">
-            <Tabs
-              value={typeFilter}
-              onValueChange={(value) => setTypeFilter(value as "all" | TransactionType)}
-            >
-              <TabsList>
-                <TabsIndicator />
-                {TYPE_TABS.map((option) => (
-                  <TabsTab key={option.value} value={option.value}>
-                    {option.label}
-                  </TabsTab>
+        {isLoggedIn && isLoading && (
+          <Card size="sm">
+            <CardHeader>
+              <CardTitle>All Transactions</CardTitle>
+              <CardDescription>Loading transactions...</CardDescription>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-4">
+              <div className="space-y-3">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <div key={i} className="flex items-center gap-4">
+                    <Skeleton className="h-4 w-24" />
+                    <Skeleton className="h-4 w-16" />
+                    <Skeleton className="h-4 w-32" />
+                    <Skeleton className="h-4 w-20" />
+                    <Skeleton className="h-4 w-20" />
+                    <Skeleton className="h-4 w-24" />
+                    <Skeleton className="h-4 w-28" />
+                  </div>
                 ))}
-              </TabsList>
-            </Tabs>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
-            {sortedTransactions.length === 0 ? (
-              <p className="py-6 text-center text-sm text-muted-foreground">
-                No transactions match &quot;{query}&quot;.
+        {isLoggedIn && error && (
+          <Card size="sm" className="border-destructive">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-destructive">
+                <AlertCircle className="size-4" />
+                Failed to load transactions
+              </CardTitle>
+              <CardDescription>{error.message}</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground">
+                Please check your connection and try again. If the problem persists, contact support.
               </p>
-            ) : (
-              <TransactionsTable
-                transactions={sortedTransactions}
-                sort={sort}
-                onSort={handleSort}
-              />
-            )}
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        )}
+
+        {(!isLoggedIn || (!isLoading && !error)) && (
+          <Card size="sm">
+            <CardHeader>
+              <CardTitle>All Transactions</CardTitle>
+              <CardDescription>
+                {filteredTransactions.length} of {totalTransactionsCount}{" "}
+                transactions{!isLoggedIn && " (demo data)"}
+              </CardDescription>
+              <CardAction className="flex items-center gap-3">
+                <span className="hidden text-sm text-muted-foreground sm:inline">
+                  Realized P&L
+                </span>
+                <GainLoss dollar={realizedGainDollar} percent={realizedGainPercent} />
+              </CardAction>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-4">
+              <Tabs
+                value={typeFilter}
+                onValueChange={(value) => setTypeFilter(value as "all" | TransactionType)}
+              >
+                <TabsList>
+                  <TabsIndicator />
+                  {TYPE_TABS.map((option) => (
+                    <TabsTab key={option.value} value={option.value}>
+                      {option.label}
+                    </TabsTab>
+                  ))}
+                </TabsList>
+              </Tabs>
+
+              {sortedTransactions.length === 0 ? (
+                <p className="py-6 text-center text-sm text-muted-foreground">
+                  {query ? `No transactions match "${query}".` : "No transactions yet."}
+                </p>
+              ) : (
+                <TransactionsTable
+                  transactions={sortedTransactions}
+                  sort={sort}
+                  onSort={handleSort}
+                />
+              )}
+            </CardContent>
+          </Card>
+        )}
+
       </div>
 
       {!isLoggedIn && <LoginPromptOverlay />}

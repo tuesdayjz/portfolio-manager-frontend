@@ -11,6 +11,7 @@ import { formatCurrency } from "@/lib/format"
 import { matchesQuery } from "@/lib/search"
 import { cn } from "@/lib/utils"
 import { deltaBadgeClass } from "@/lib/trade-status"
+import { Skeleton } from "@/components/ui/skeleton"
 import {
   Card,
   CardContent,
@@ -31,21 +32,26 @@ import {
 export function TopPositionsCard() {
   const [query, setQuery] = useState("")
   const user = useSession()
-  const { data } = usePortfolioQuery(!!user, (api) => api.getHoldings({ perPage: 100 }))
-  const positions = data
-    ? data.items
-        .map((holding) => ({
-          symbol: holding.ticker,
-          name: holding.name,
-          qty: holding.quantity,
-          price: holding.current_price,
-          marketValue: holding.total_market_value,
-          changePct: holding.today_return_percent,
-        }))
-        .sort((a, b) => b.marketValue - a.marketValue)
-        .slice(0, 5)
-    : topPositions
-  const totalCount = data?.pagination.total_items ?? totalPositionsCount
+  const isLoggedIn = !!user
+  const { data, isLoading } = usePortfolioQuery(isLoggedIn, (api) => api.getHoldings({ perPage: 100 }))
+
+  // Only use mock data for non-logged-in users
+  const positions = useMemo(() => {
+    return data
+      ? data.items
+          .map((holding) => ({
+            symbol: holding.ticker,
+            name: holding.name,
+            qty: holding.quantity,
+            price: holding.current_price,
+            marketValue: holding.total_market_value,
+            changePct: holding.today_return_percent,
+          }))
+          .sort((a, b) => b.marketValue - a.marketValue)
+          .slice(0, 5)
+      : isLoggedIn ? [] : topPositions
+  }, [data, isLoggedIn])
+  const totalCount = data?.pagination.total_items ?? (isLoggedIn ? 0 : totalPositionsCount)
 
   const filteredPositions = useMemo(
     () =>
@@ -68,9 +74,23 @@ export function TopPositionsCard() {
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search..."
           className="h-8 w-40 sm:w-48"
+          disabled={isLoading}
         />
       </CardHeader>
       <CardContent className="flex grow px-0">
+        {isLoggedIn && isLoading ? (
+          <div className="flex w-full flex-col gap-3 px-(--card-spacing) pt-2">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="flex items-center gap-3">
+                <Skeleton className="h-3.5 w-32" />
+                <Skeleton className="ml-auto h-3.5 w-10" />
+                <Skeleton className="h-3.5 w-16" />
+                <Skeleton className="h-3.5 w-20" />
+                <Skeleton className="h-5 w-14 rounded-full" />
+              </div>
+            ))}
+          </div>
+        ) : (
         <Table>
           <TableHeader>
             <TableRow>
@@ -90,7 +110,7 @@ export function TopPositionsCard() {
                   colSpan={5}
                   className="py-6 text-center text-sm text-muted-foreground"
                 >
-                  No positions match &quot;{query}&quot;.
+                  {query ? `No positions match "${query}".` : isLoggedIn ? "No positions yet." : `No positions match "${query}".`}
                 </TableCell>
               </TableRow>
             ) : (
@@ -129,6 +149,7 @@ export function TopPositionsCard() {
             )}
           </TableBody>
         </Table>
+        )}
       </CardContent>
       <CardFooter className="flex items-center justify-between text-xs text-muted-foreground">
         <span>

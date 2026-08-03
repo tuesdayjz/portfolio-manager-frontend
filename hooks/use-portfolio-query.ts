@@ -15,12 +15,17 @@ export function usePortfolioQuery<T>(
 ) {
   const [data, setData] = useState<T | null>(null)
   const [error, setError] = useState<Error | null>(null)
+  const [isLoading, setIsLoading] = useState(() => enabled)
 
   useEffect(() => {
-    if (!enabled) return
+    if (!enabled) {
+      return
+    }
 
     let cancelled = false
     async function run() {
+      setIsLoading(true)
+      setError(null)
       try {
         const { data: sessionData } = await createClient().auth.getSession()
         if (!sessionData.session?.access_token) throw new Error("No active session")
@@ -28,6 +33,8 @@ export function usePortfolioQuery<T>(
         if (!cancelled) setData(result)
       } catch (cause) {
         if (!cancelled) setError(cause instanceof Error ? cause : new Error("Unable to retrieve portfolio data"))
+      } finally {
+        if (!cancelled) setIsLoading(false)
       }
     }
     void run()
@@ -39,5 +46,5 @@ export function usePortfolioQuery<T>(
   }, [enabled, ...dependencies])
 
   // Do not expose a previous private response after a user signs out.
-  return { data: enabled ? data : null, error: enabled ? error : null }
+  return { data: enabled ? data : null, error: enabled ? error : null, isLoading: enabled ? isLoading : false }
 }

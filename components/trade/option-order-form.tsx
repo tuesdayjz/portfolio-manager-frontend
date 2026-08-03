@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { CheckCircle2 } from "lucide-react"
 
 import { Label } from "@/components/ui/label"
@@ -24,6 +24,7 @@ import {
   type OptionContract,
   type SecurityQuote,
 } from "@/lib/securities"
+import { computeOptionGreeks } from "@/lib/option-greeks"
 import type {
   OptionType,
   TradeAction,
@@ -110,6 +111,22 @@ export function OptionOrderForm({
     (c) => c.contractSymbol === contractSymbol
   )
 
+  const underlyingPrice = quote?.price ?? chain?.underlyingPrice ?? 0
+
+  // Only the one contract the user has selected gets priced — not the rest
+  // of the chain — and the closed-form formula below is O(1), so this is
+  // cheap to recompute on every relevant change.
+  const greeks = useMemo(() => {
+    if (!selectedContract || !underlyingPrice) return null
+    return computeOptionGreeks({
+      optionType,
+      underlyingPrice,
+      strike: selectedContract.strike,
+      expiryUnixSeconds: selectedContract.expiry,
+      impliedVolatility: selectedContract.impliedVolatility,
+    })
+  }, [selectedContract, optionType, underlyingPrice])
+
   const premium = usingLiveChain
     ? (selectedContract?.lastPrice ?? 0)
     : Number(manualPremium || 0)
@@ -169,7 +186,7 @@ export function OptionOrderForm({
             }}
             options={[
               { value: "call", label: "Call" },
-              { value: "put", label: "Put" },
+              { value: "put", label: "Put", activeClassName: "text-destructive" },
             ]}
           />
         </div>
@@ -282,7 +299,7 @@ export function OptionOrderForm({
             onChange={setAction}
             options={[
               { value: "buy", label: "Buy" },
-              { value: "sell", label: "Sell" },
+              { value: "sell", label: "Sell", activeClassName: "text-destructive" },
             ]}
           />
         </div>
@@ -293,7 +310,7 @@ export function OptionOrderForm({
             onChange={setPosition}
             options={[
               { value: "long", label: "Long" },
-              { value: "short", label: "Short" },
+              { value: "short", label: "Short", activeClassName: "text-destructive" },
             ]}
           />
         </div>
@@ -318,7 +335,29 @@ export function OptionOrderForm({
         </span>
       </div>
 
-      <Button type="submit" variant={action === "sell" ? "destructive" : "default"} disabled={!canSubmit}>
+      {greeks && (
+        <div className="flex flex-col gap-1.5">
+          <h3 className="text-sm font-semibold">Risk Management</h3>
+          <div className="grid grid-cols-5 gap-2 rounded-lg border px-3 py-2.5 text-sm">
+            {(
+              [
+                ["Delta", greeks.delta],
+                ["Gamma", greeks.gamma],
+                ["Theta", greeks.theta],
+                ["Vega", greeks.vega],
+                ["Rho", greeks.rho],
+              ] as const
+            ).map(([label, value]) => (
+              <div key={label} className="flex flex-col items-center gap-0.5">
+                <span className="text-xs text-muted-foreground">{label}</span>
+                <span className="font-medium tabular-nums">{value.toFixed(4)}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <Button type="submit" disabled={!canSubmit}>
         Review &amp; Submit Order
       </Button>
 

@@ -12,6 +12,7 @@ export type OptionContract = {
   bid: number
   ask: number
   expiry: number
+  impliedVolatility: number
 }
 
 export type OptionChain = {
@@ -30,6 +31,7 @@ function mapContract(raw: Record<string, unknown>): OptionContract {
     bid: (raw.bid ?? 0) as number,
     ask: (raw.ask ?? 0) as number,
     expiry: (raw.expiration ?? 0) as number,
+    impliedVolatility: (raw.impliedVolatility ?? 0) as number,
   }
 }
 

@@ -25,6 +25,7 @@ export type OptionContract = {
   bid: number
   ask: number
   expiry: number
+  impliedVolatility: number
 }
 
 export type OptionChain = {

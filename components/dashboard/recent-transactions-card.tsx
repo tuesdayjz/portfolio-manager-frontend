@@ -4,7 +4,10 @@ import { useMemo, useState } from "react"
 import Link from "next/link"
 import { History } from "lucide-react"
 
-import { recentTransactions, totalTransactionsCount } from "@/lib/mock-data"
+import { recentTransactions, totalTransactionsCount } from "@/lib/mock/dashboard"
+import { useSession } from "@/lib/auth"
+import { usePortfolioQuery } from "@/hooks/use-portfolio-query"
+import { tradeBadgeClass } from "@/lib/trade-status"
 import { formatCurrency } from "@/lib/format"
 import { matchesQuery } from "@/lib/search"
 import {
@@ -27,13 +30,30 @@ import {
 
 export function RecentTransactionsCard() {
   const [query, setQuery] = useState("")
+  const user = useSession()
+  const { data } = usePortfolioQuery(!!user, (api) => api.getTransactions({ perPage: 7 }))
+  const transactions = data
+    ? data.items.map((transaction) => ({
+        date: new Intl.DateTimeFormat("en-US", {
+          month: "short",
+          day: "2-digit",
+          year: "numeric",
+        }).format(new Date(transaction.date)),
+        type: transaction.transaction_type.toUpperCase() as "BUY" | "SELL",
+        asset: transaction.symbol,
+        qty: transaction.quantity,
+        price: transaction.price,
+        total: transaction.total_amount,
+      }))
+    : recentTransactions
+  const totalCount = data?.pagination.total_items ?? totalTransactionsCount
 
   const filteredTransactions = useMemo(
     () =>
-      recentTransactions.filter((tx) =>
+      transactions.filter((tx) =>
         matchesQuery(query, tx.asset, tx.type, tx.date)
       ),
-    [query]
+    [transactions, query]
   )
 
   return (
@@ -82,14 +102,7 @@ export function RecentTransactionsCard() {
                     {tx.date}
                   </TableCell>
                   <TableCell>
-                    <Badge
-                      variant={tx.type === "BUY" ? "secondary" : "outline"}
-                      className={
-                        tx.type === "BUY"
-                          ? "text-primary"
-                          : "text-destructive"
-                      }
-                    >
+                    <Badge variant="secondary" className={tradeBadgeClass}>
                       {tx.type}
                     </Badge>
                   </TableCell>
@@ -112,7 +125,7 @@ export function RecentTransactionsCard() {
       <CardFooter className="flex items-center justify-between text-xs text-muted-foreground">
         <span>
           Showing {filteredTransactions.length} of last{" "}
-          {totalTransactionsCount} transactions
+          {totalCount} transactions
         </span>
         <Link
           href="/transactions"

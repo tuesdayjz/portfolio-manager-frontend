@@ -1,4 +1,4 @@
-import type { AssetClass } from "@/lib/positions-data"
+import type { AssetClass } from "@/lib/mock/positions"
 
 export type TransactionType = "BUY" | "SELL"
 

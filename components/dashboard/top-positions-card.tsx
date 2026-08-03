@@ -4,10 +4,13 @@ import { useMemo, useState } from "react"
 import Link from "next/link"
 import { Briefcase } from "lucide-react"
 
-import { topPositions, totalPositionsCount } from "@/lib/mock-data"
-import { formatCurrency, formatPercent } from "@/lib/format"
+import { topPositions, totalPositionsCount } from "@/lib/mock/dashboard"
+import { useSession } from "@/lib/auth"
+import { usePortfolioQuery } from "@/hooks/use-portfolio-query"
+import { formatCurrency } from "@/lib/format"
 import { matchesQuery } from "@/lib/search"
 import { cn } from "@/lib/utils"
+import { deltaBadgeClass } from "@/lib/trade-status"
 import {
   Card,
   CardContent,
@@ -27,13 +30,29 @@ import {
 
 export function TopPositionsCard() {
   const [query, setQuery] = useState("")
+  const user = useSession()
+  const { data } = usePortfolioQuery(!!user, (api) => api.getHoldings({ perPage: 100 }))
+  const positions = data
+    ? data.items
+        .map((holding) => ({
+          symbol: holding.symbol,
+          name: holding.name,
+          qty: holding.quantity,
+          price: holding.current_price,
+          marketValue: holding.market_value,
+          changePct: holding.day_change_percent,
+        }))
+        .sort((a, b) => b.marketValue - a.marketValue)
+        .slice(0, 5)
+    : topPositions
+  const totalCount = data?.pagination.total_items ?? totalPositionsCount
 
   const filteredPositions = useMemo(
     () =>
-      topPositions.filter((position) =>
+      positions.filter((position) =>
         matchesQuery(query, position.symbol, position.name)
       ),
-    [query]
+    [positions, query]
   )
 
   return (
@@ -97,13 +116,12 @@ export function TopPositionsCard() {
                   <TableCell className="pr-(--card-spacing) text-right">
                     <span
                       className={cn(
-                        "inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium tabular-nums",
-                        position.changePct >= 0
-                          ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
-                          : "bg-destructive/10 text-destructive"
+                        "inline-flex rounded-full px-2 py-0.5 text-xs font-medium tabular-nums",
+                        deltaBadgeClass(position.changePct)
                       )}
                     >
-                      {formatPercent(position.changePct)}
+                      {position.changePct >= 0 ? "+" : ""}
+                      {position.changePct.toFixed(2)}%
                     </span>
                   </TableCell>
                 </TableRow>
@@ -114,7 +132,7 @@ export function TopPositionsCard() {
       </CardContent>
       <CardFooter className="flex items-center justify-between text-xs text-muted-foreground">
         <span>
-          Showing {filteredPositions.length} of {totalPositionsCount} positions
+          Showing {filteredPositions.length} of {totalCount} positions
         </span>
         <Link
           href="/positions"

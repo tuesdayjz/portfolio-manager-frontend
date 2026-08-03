@@ -24,6 +24,8 @@ import { Tabs, TabsIndicator, TabsList, TabsTab } from "@/components/ui/tabs"
 import { cn } from "@/lib/utils"
 import { matchesQuery } from "@/lib/search"
 import { useSession } from "@/lib/auth"
+import { usePortfolioQuery } from "@/hooks/use-portfolio-query"
+import { deltaBadgeClass, tradeBadgeClass } from "@/lib/trade-status"
 import { LoginPromptOverlay } from "@/components/layout/login-prompt-overlay"
 import {
   ASSET_CLASSES,
@@ -32,7 +34,7 @@ import {
   type AssetClass,
   type HoldingPosition,
   type OptionPosition,
-} from "@/lib/positions-data"
+} from "@/lib/mock/positions"
 
 function formatCurrency(value: number) {
   return value.toLocaleString("en-US", {
@@ -55,14 +57,22 @@ function DayChange({ percent }: { percent: number }) {
   return (
     <span
       className={cn(
-        "font-medium",
-        positive ? "text-chart-3" : "text-destructive"
+        "inline-flex rounded-full px-2 py-0.5 text-xs font-medium tabular-nums",
+        deltaBadgeClass(percent)
       )}
     >
       {positive ? "+" : ""}
       {percent.toFixed(2)}%
     </span>
   )
+}
+
+function assetClassFromApi(assetType: string): AssetClass {
+  const type = assetType.toLowerCase()
+  if (type.includes("fx") || type.includes("forex") || type.includes("currency")) return "fx"
+  if (type.includes("bond") || type.includes("fixed")) return "fixed-income"
+  if (type.includes("commodity") || type.includes("metal") || type.includes("energy")) return "commodities"
+  return "equities"
 }
 
 function TotalReturn({ dollar, percent }: { dollar: number; percent: number }) {
@@ -237,13 +247,7 @@ function HoldingsTable({ positions }: { positions: HoldingPosition[] }) {
                       <div className="text-xs text-muted-foreground">{position.name}</div>
                     </td>
                     <td className="py-1.5 pr-4">
-                      <Badge
-                        variant="outline"
-                        className={cn(
-                          "capitalize",
-                          position.side === "short" && "border-destructive/30 text-destructive"
-                        )}
-                      >
+                      <Badge variant="secondary" className={`capitalize ${tradeBadgeClass}`}>
                         {position.side}
                       </Badge>
                     </td>
@@ -361,13 +365,7 @@ function OptionsTable({ positions }: { positions: OptionPosition[] }) {
                       <div className="text-xs text-muted-foreground">{position.name}</div>
                     </td>
                     <td className="py-1.5 pr-4">
-                      <Badge
-                        variant="outline"
-                        className={cn(
-                          "capitalize",
-                          position.optionType === "put" && "border-destructive/30 text-destructive"
-                        )}
-                      >
+                      <Badge variant="outline" className="capitalize">
                         {position.optionType}
                       </Badge>
                     </td>
@@ -418,14 +416,33 @@ export default function PositionsPage() {
   const [query, setQuery] = useState("")
   const user = useSession()
   const isLoggedIn = !!user
+  const { data } = usePortfolioQuery(isLoggedIn, (api) => api.getHoldings({ perPage: 100 }))
+  const holdings = data
+    ? data.items.map((holding) => ({
+        symbol: holding.symbol,
+        name: holding.name,
+        assetClass: assetClassFromApi(holding.asset_type),
+        side: "long" as const,
+        quantity: holding.quantity,
+        avgPrice: holding.average_purchase_price,
+        currentPrice: holding.current_price,
+        dayChangePercent: holding.day_change_percent,
+      }))
+    : HOLDINGS
+  // The current backend contract exposes holdings only; keep the existing sample
+  // option positions for visitors until options are added to that contract.
+  const optionPositions = useMemo(
+    () => (isLoggedIn ? [] : OPTION_POSITIONS),
+    [isLoggedIn]
+  )
 
   const filteredHoldings = useMemo(
-    () => HOLDINGS.filter((p) => matchesQuery(query, p.symbol, p.name)),
-    [query]
+    () => holdings.filter((p) => matchesQuery(query, p.symbol, p.name)),
+    [holdings, query]
   )
   const filteredOptions = useMemo(
-    () => OPTION_POSITIONS.filter((p) => matchesQuery(query, p.symbol, p.name)),
-    [query]
+    () => optionPositions.filter((p) => matchesQuery(query, p.symbol, p.name)),
+    [optionPositions, query]
   )
 
   return (

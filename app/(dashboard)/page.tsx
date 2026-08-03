@@ -13,6 +13,11 @@ import { LoginPromptOverlay } from "@/components/layout/login-prompt-overlay"
 export default function DashboardPage() {
   const user = useSession()
   const isLoggedIn = !!user
+  const currentDate = new Intl.DateTimeFormat("en-US", {
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  }).format(new Date())
 
   return (
     <div className="relative">
@@ -37,7 +42,7 @@ export default function DashboardPage() {
           </div>
           <Button variant="outline" size="sm" className="w-fit">
             <Calendar />
-            Last 30 Days: June 15, 2024
+            Last 30 Days: {currentDate}
           </Button>
         </div>
 

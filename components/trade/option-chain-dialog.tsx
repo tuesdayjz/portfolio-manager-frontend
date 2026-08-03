@@ -201,7 +201,7 @@ export function OptionChainDialog({
                         onClick={() => handlePick(row.call, "call")}
                         className={cn(
                           "cursor-pointer px-2 py-1 text-right tabular-nums hover:bg-accent",
-                          callItm && "bg-emerald-100 dark:bg-emerald-950/50"
+                          callItm && "bg-primary/10"
                         )}
                       >
                         {row.call ? row.call.lastPrice.toFixed(2) : "—"}
@@ -210,7 +210,7 @@ export function OptionChainDialog({
                         onClick={() => handlePick(row.call, "call")}
                         className={cn(
                           "cursor-pointer px-2 py-1 text-right tabular-nums hover:bg-accent",
-                          callItm && "bg-emerald-100 dark:bg-emerald-950/50"
+                          callItm && "bg-primary/10"
                         )}
                       >
                         {row.call ? row.call.bid.toFixed(2) : "—"}
@@ -219,7 +219,7 @@ export function OptionChainDialog({
                         onClick={() => handlePick(row.call, "call")}
                         className={cn(
                           "cursor-pointer px-2 py-1 text-right tabular-nums hover:bg-accent",
-                          callItm && "bg-emerald-100 dark:bg-emerald-950/50"
+                          callItm && "bg-primary/10"
                         )}
                       >
                         {row.call ? row.call.ask.toFixed(2) : "—"}
@@ -231,7 +231,7 @@ export function OptionChainDialog({
                         onClick={() => handlePick(row.put, "put")}
                         className={cn(
                           "cursor-pointer px-2 py-1 text-right tabular-nums hover:bg-accent",
-                          putItm && "bg-emerald-100 dark:bg-emerald-950/50"
+                          putItm && "bg-primary/10"
                         )}
                       >
                         {row.put ? row.put.bid.toFixed(2) : "—"}
@@ -240,7 +240,7 @@ export function OptionChainDialog({
                         onClick={() => handlePick(row.put, "put")}
                         className={cn(
                           "cursor-pointer px-2 py-1 text-right tabular-nums hover:bg-accent",
-                          putItm && "bg-emerald-100 dark:bg-emerald-950/50"
+                          putItm && "bg-primary/10"
                         )}
                       >
                         {row.put ? row.put.ask.toFixed(2) : "—"}
@@ -249,7 +249,7 @@ export function OptionChainDialog({
                         onClick={() => handlePick(row.put, "put")}
                         className={cn(
                           "cursor-pointer px-2 py-1 text-right tabular-nums hover:bg-accent",
-                          putItm && "bg-emerald-100 dark:bg-emerald-950/50"
+                          putItm && "bg-primary/10"
                         )}
                       >
                         {row.put ? row.put.lastPrice.toFixed(2) : "—"}

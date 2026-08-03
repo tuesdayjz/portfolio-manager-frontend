@@ -34,6 +34,10 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    // /api/securities/* are public market-data proxies with no Supabase
+    // session dependency, so they skip the auth-refreshing middleware
+    // entirely instead of paying for a Supabase round-trip on every quote,
+    // search keystroke, and chart fetch.
+    "/((?!_next/static|_next/image|favicon.ico|api/securities|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 }

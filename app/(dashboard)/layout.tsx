@@ -2,6 +2,7 @@
 
 import { AppSidebar } from "@/components/layout/app-sidebar"
 import { SiteHeader } from "@/components/layout/site-header"
+import { PetChatWidget } from "@/components/layout/pet-chat-widget"
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 
 // TODO: re-enable the /login redirect guard here before shipping.
@@ -23,6 +24,7 @@ export default function DashboardLayout({
           </SidebarInset>
         </div>
       </SidebarProvider>
+      <PetChatWidget />
     </div>
   )
 }

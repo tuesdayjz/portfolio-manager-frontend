@@ -1,16 +1,15 @@
 export type ApiHolding = {
-  asset_id: number
-  asset_type: string
-  average_purchase_price: number
-  currency: string
-  current_price: number
-  day_change_percent: number
-  market_value: number
+  ticker: string
   name: string
-  portfolio_id: number
+  asset_type: string
   quantity: number
-  sector?: string | null
-  symbol: string
+  average_purchase_price: number
+  total_purchase_price: number
+  current_price: number
+  total_market_value: number
+  today_return_percent: number
+  total_return_percent: number
+  currency: string
 }
 
 export type ApiTransaction = {
@@ -37,6 +36,7 @@ export type AllocationResponse = {
 
 export type HoldingsResponse = {
   items: ApiHolding[]
+  totals: { market_value: number; day_change: number; day_change_percent: number; currency: string }
   pagination: { page: number; per_page: number; total_items: number; total_pages: number }
 }
 

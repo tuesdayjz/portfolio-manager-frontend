@@ -419,14 +419,14 @@ export default function PositionsPage() {
   const { data } = usePortfolioQuery(isLoggedIn, (api) => api.getHoldings({ perPage: 100 }))
   const holdings = data
     ? data.items.map((holding) => ({
-        symbol: holding.symbol,
+        symbol: holding.ticker,
         name: holding.name,
         assetClass: assetClassFromApi(holding.asset_type),
         side: "long" as const,
         quantity: holding.quantity,
         avgPrice: holding.average_purchase_price,
         currentPrice: holding.current_price,
-        dayChangePercent: holding.day_change_percent,
+        dayChangePercent: holding.today_return_percent,
       }))
     : HOLDINGS
   // The current backend contract exposes holdings only; keep the existing sample

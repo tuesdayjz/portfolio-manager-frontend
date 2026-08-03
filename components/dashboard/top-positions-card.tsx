@@ -35,12 +35,12 @@ export function TopPositionsCard() {
   const positions = data
     ? data.items
         .map((holding) => ({
-          symbol: holding.symbol,
+          symbol: holding.ticker,
           name: holding.name,
           qty: holding.quantity,
           price: holding.current_price,
-          marketValue: holding.market_value,
-          changePct: holding.day_change_percent,
+          marketValue: holding.total_market_value,
+          changePct: holding.today_return_percent,
         }))
         .sort((a, b) => b.marketValue - a.marketValue)
         .slice(0, 5)

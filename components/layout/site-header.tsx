@@ -9,6 +9,7 @@ import { SidebarTrigger } from "@/components/ui/sidebar"
 import { ThemeToggle } from "@/components/layout/theme-toggle"
 import { portfolioTotalValue } from "@/lib/mock/dashboard"
 import { getPerformanceSummary } from "@/lib/mock/performance"
+import { useSession } from "@/lib/auth"
 import { usePortfolioSummary } from "@/lib/portfolio"
 
 const mockPortfolio = getPerformanceSummary("all")
@@ -21,13 +22,30 @@ const currencyFormatter = new Intl.NumberFormat("en-US", {
 })
 
 export function SiteHeader() {
+  const user = useSession()
+  const isLoggedIn = !!user
   const { summary } = usePortfolioSummary()
 
-  const totalAssets = summary ? summary.totalMarketValue : portfolioTotalValue
-  const totalUsableCash = summary ? summary.cashBalance : 0
-  const totalReturnPercent = summary
-    ? summary.totalReturnPercent
+  // For logged-in users, rely solely on summary data (defaulting to 0 before load/if empty).
+  // Mock data is reserved exclusively for guests/demo view.
+  const totalAssets = isLoggedIn
+    ? summary
+      ? summary.totalMarketValue + summary.cashBalance
+      : 0
+    : portfolioTotalValue
+
+  const totalUsableCash = isLoggedIn
+    ? summary
+      ? summary.cashBalance
+      : 0
+    : 0
+
+  const totalReturnPercent = isLoggedIn
+    ? summary
+      ? summary.totalReturnPercent
+      : 0
     : mockPortfolio.totalReturnPercent
+
   const isPositiveReturn = totalReturnPercent >= 0
 
   return (

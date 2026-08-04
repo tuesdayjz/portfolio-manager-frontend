@@ -72,8 +72,10 @@ function DayChange({ percent }: { percent: number }) {
 function assetClassFromApi(assetType: string): AssetClass {
   const type = assetType.toLowerCase()
   if (type.includes("fx") || type.includes("forex") || type.includes("currency")) return "fx"
-  if (type.includes("bond") || type.includes("fixed")) return "fixed-income"
+  if (type.includes("bond") || type.includes("fixed") || type === "bond") return "fixed-income"
   if (type.includes("commodity") || type.includes("metal") || type.includes("energy")) return "commodities"
+  // Yahoo Finance types: CRYPTOCURRENCY, ETF, MUTUALFUND, REIT — keep as equities bucket
+  // since the positions page only supports the four tab values from mock/positions.
   return "equities"
 }
 

@@ -60,6 +60,9 @@ export async function searchSecurities(query: string): Promise<SecuritySearchRes
   if (!query.trim()) return []
   const res = await fetch(`/api/securities/search?q=${encodeURIComponent(query)}`)
   const data = await res.json()
+  if (!res.ok) {
+    throw new Error((data as ApiError).error ?? "Unable to search securities.")
+  }
   return (data.results ?? []) as SecuritySearchResult[]
 }
 

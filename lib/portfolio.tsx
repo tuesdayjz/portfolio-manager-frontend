@@ -31,11 +31,13 @@ export async function getPortfolioSummary(): Promise<PortfolioSummary> {
 
 type PortfolioSummaryContextValue = {
   summary: PortfolioSummary | null
+  error: Error | null
   refresh: () => void
 }
 
 const PortfolioSummaryContext = createContext<PortfolioSummaryContextValue>({
   summary: null,
+  error: null,
   refresh: () => {},
 })
 
@@ -45,21 +47,30 @@ const PortfolioSummaryContext = createContext<PortfolioSummaryContextValue>({
 export function PortfolioSummaryProvider({ children }: { children: React.ReactNode }) {
   const user = useSession()
   const [summary, setSummary] = useState<PortfolioSummary | null>(null)
+  const [error, setError] = useState<Error | null>(null)
   const [version, setVersion] = useState(0)
 
   useEffect(() => {
     let cancelled = false
 
     if (!user) {
+      setSummary(null)
+      setError(null)
       return
     }
 
     getPortfolioSummary()
       .then((result) => {
-        if (!cancelled) setSummary(result)
+        if (!cancelled) {
+          setSummary(result)
+          setError(null)
+        }
       })
-      .catch(() => {
-        if (!cancelled) setSummary(null)
+      .catch((err: unknown) => {
+        if (!cancelled) {
+          setSummary(null)
+          setError(err instanceof Error ? err : new Error("Unable to load portfolio summary."))
+        }
       })
     return () => {
       cancelled = true
@@ -69,7 +80,7 @@ export function PortfolioSummaryProvider({ children }: { children: React.ReactNo
   const refresh = useCallback(() => setVersion((v) => v + 1), [])
 
   return (
-    <PortfolioSummaryContext.Provider value={{ summary, refresh }}>
+    <PortfolioSummaryContext.Provider value={{ summary, error, refresh }}>
       {children}
     </PortfolioSummaryContext.Provider>
   )

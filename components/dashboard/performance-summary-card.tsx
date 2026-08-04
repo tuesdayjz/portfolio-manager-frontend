@@ -51,7 +51,7 @@ function PerformanceTooltip({
 export function PerformanceSummaryCard() {
   const user = useSession()
   const isLoggedIn = !!user
-  const { data, isLoading } = usePortfolioQuery(isLoggedIn, (api) => api.getPerformance("6m"))
+  const { data, isLoading } = usePortfolioQuery(isLoggedIn, (api) => api.getPerformance("3m"))
 
   // Only use mock data for non-logged-in users
   const history = data
@@ -68,7 +68,7 @@ export function PerformanceSummaryCard() {
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle className="flex items-center gap-2">
           <LineChartIcon className="size-4 text-primary" />
-          Performance Summary (6M)
+          Performance Summary (3M)
         </CardTitle>
         <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
           <span className="size-2 rounded-full bg-primary" />

@@ -266,13 +266,13 @@ function PerformanceChart({
 function PerformancePanel({ seriesKey }: { seriesKey: PerformanceSeriesKey }) {
   const [range, setRange] = useState<TimeRangeKey>("3M")
   const user = useSession()
-  const apiRange: Record<TimeRangeKey, "1w" | "1m" | "3m" | "1y" | "all"> = {
-    "1W": "1w", "1M": "1m", "3M": "3m", YTD: "1y", "1Y": "1y", ALL: "all",
+  const apiRange: Record<TimeRangeKey, "1w" | "1m" | "3m" | "YTD" | "1y" | "all"> = {
+    "1W": "1w", "1M": "1m", "3M": "3m", YTD: "YTD", "1Y": "1y", ALL: "all",
   }
   const { data, isLoading, error } = usePortfolioQuery(
     !!user,
-    (api) => api.getPerformance(apiRange[range]),
-    [range]
+    (api) => api.getPerformance(apiRange[range], seriesKey),
+    [range, seriesKey]
   )
 
   const rangeConfig = TIME_RANGES.find((r) => r.value === range) ?? TIME_RANGES[0]

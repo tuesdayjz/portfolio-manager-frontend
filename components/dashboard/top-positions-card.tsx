@@ -110,7 +110,7 @@ export function TopPositionsCard() {
                   colSpan={5}
                   className="py-6 text-center text-sm text-muted-foreground"
                 >
-                  {query ? `No positions match "${query}".` : isLoggedIn ? "No positions yet." : `No positions match "${query}".`}
+                  {query ? `No positions match "${query}".` : "No positions yet."}
                 </TableCell>
               </TableRow>
             ) : (

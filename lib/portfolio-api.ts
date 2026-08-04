@@ -13,22 +13,25 @@ export type ApiHolding = {
 }
 
 /**
- * Expected item shape for GET /portfolios/transactions when implemented.
- * The backend currently returns 501 for this endpoint; the schema may be
- * refined when the listing endpoint is fully implemented.
+ * Item shape for GET /portfolios/transactions.
+ * The backend currently returns 501 for this endpoint — it uses TransactionSchema
+ * for the response (same as the POST response), which only has these required fields.
+ * Optional fields are anticipated extensions for when the list endpoint is implemented.
  */
 export type ApiTransaction = {
+  // Fields returned by the backend's TransactionSchema (POST response / future GET)
   date: string
   symbol: string
   name: string
   asset_type: string
   executed_price: number
   executed_unit_price: number
+  // Fields anticipated for the full GET /portfolios/transactions response
+  transaction_type?: "buy" | "sell"
+  transaction_id?: string | number
   quantity?: number
   price?: number
   total_amount?: number
-  transaction_type?: "buy" | "sell"
-  transaction_id?: string | number
   realized_pl?: number | null
   realized_pl_percent?: number | null
 }
@@ -53,15 +56,32 @@ export type TransactionsResponse = {
   totals: { cost_basis: number; currency: string; realized_pl: number; realized_pl_percent: number; sell_count: number }
 }
 
+type PerformanceChange = { amount: number; percent: number }
+
 export type PerformanceResponse = {
   currency: string
+  /** Granularity of the chart points (e.g. "1d"). */
+  interval: string
+  /** Preset range label selected, or null when start_date/end_date were used directly. */
+  range: string | null
+  start_date: string
+  end_date: string
   points: { date: string; total_market_value: number }[]
   metrics: {
     portfolio_value: number
-    today: { amount: number; percent: number }
-    return: { amount: number; percent: number }
-    total_return: { amount: number; percent: number }
+    today: PerformanceChange
+    /** Return for the selected period. Key is `return` in JSON (reserved word). */
+    return: PerformanceChange
+    total_return: PerformanceChange
   }
+  /** Pre-computed returns for each standard range, independent of the selected period. */
+  return_1d: PerformanceChange
+  return_1w: PerformanceChange
+  return_1m: PerformanceChange
+  return_3m: PerformanceChange
+  return_YTD: PerformanceChange
+  return_1y: PerformanceChange
+  return_total: PerformanceChange
 }
 
 type Fetcher = typeof fetch
@@ -118,7 +138,13 @@ export function createPortfolioApi(accessToken: string, fetcher: Fetcher = fetch
         search: params?.search,
         transaction_type: params?.transactionType,
       }),
-    getPerformance: (range: "1w" | "1m" | "3m" | "6m" | "1y" | "all") =>
-      get<PerformanceResponse>("/api/v1/portfolios/performance", { range, interval: "1d" }),
+    /**
+     * Fetch portfolio performance for a given range and optional asset type.
+     * Valid range values mirror the backend PerformanceRange enum:
+     * 1w | 1m | 3m | YTD | 1y | all
+     * Note: "6m" is NOT a valid backend range and will result in a 422.
+     */
+    getPerformance: (range: "1w" | "1m" | "3m" | "YTD" | "1y" | "all", assetType?: string) =>
+      get<PerformanceResponse>("/api/v1/portfolios/performance", { range, interval: "1d", asset_type: assetType }),
   }
 }

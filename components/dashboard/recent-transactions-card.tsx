@@ -117,9 +117,7 @@ export function RecentTransactionsCard() {
                   >
                     {query
                       ? `No transactions match "${query}".`
-                      : isLoggedIn
-                        ? "No transactions yet."
-                        : `No transactions match "${query}".`}
+                      : "No transactions yet."}
                   </TableCell>
                 </TableRow>
               ) : (

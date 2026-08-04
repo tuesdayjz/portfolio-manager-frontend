@@ -96,6 +96,30 @@ export async function getHistory(
   return data as SecurityHistory
 }
 
+export type EodPrice = {
+  price: number
+  // yyyy-mm-dd of the trading day the price actually came from - falls back
+  // to the prior trading day when the requested date has no data (weekend/holiday).
+  date: string
+}
+
+export async function getEodPrice(symbol: string, date: string): Promise<EodPrice | null> {
+  const params = new URLSearchParams({ symbol, date })
+  const res = await fetch(`/api/securities/history?${params.toString()}`)
+  const data = await res.json()
+  if (!res.ok) {
+    throw new Error((data as ApiError).error ?? "Unable to load the price for this date.")
+  }
+
+  const candle = (data as SecurityHistory).candles.at(-1)
+  if (!candle) return null
+
+  return {
+    price: candle.close,
+    date: new Date(candle.time * 1000).toISOString().slice(0, 10),
+  }
+}
+
 export function formatCurrency(value: number, currency = "USD") {
   return value.toLocaleString("en-US", {
     style: "currency",

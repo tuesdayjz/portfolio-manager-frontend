@@ -276,6 +276,9 @@ function PerformanceChart({
 function PerformancePanel({ seriesKey }: { seriesKey: PerformanceSeriesKey }) {
   const [range, setRange] = useState<TimeRangeKey>("3M")
   const user = useSession()
+  const apiRange: Record<TimeRangeKey, PerformanceRange> = {
+    "1W": "1w", "1M": "1m", "3M": "3m", YTD: "YTD", "1Y": "1y", ALL: "all",
+  }
   const { data, isLoading, error } = usePortfolioQuery(
     !!user,
     (api) => api.getPerformance(API_RANGE[range], seriesKey),

@@ -8,6 +8,7 @@ import { getPerformanceSummary } from "@/lib/mock/performance"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { PetSprite, petMoodFromReturn } from "@/components/layout/pet-sprite"
+import { useShowDaoDun } from "@/lib/hooks/use-show-daodun"
 import {
   Sheet,
   SheetContent,
@@ -18,10 +19,11 @@ import {
 
 export function PetChatWidget() {
   const user = useSession()
+  const [showDaoDun] = useShowDaoDun()
   const [open, setOpen] = useState(false)
   const mood = petMoodFromReturn(getPerformanceSummary("all").totalReturnPercent)
 
-  if (!user) return null
+  if (!user || !showDaoDun) return null
 
   return (
     <>

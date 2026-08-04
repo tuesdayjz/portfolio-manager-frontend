@@ -24,6 +24,7 @@ import { Tabs, TabsIndicator, TabsList, TabsTab } from "@/components/ui/tabs"
 import { cn } from "@/lib/utils"
 import { useSession } from "@/lib/auth"
 import { usePortfolioQuery } from "@/hooks/use-portfolio-query"
+import type { PerformanceRange } from "@/lib/portfolio-api"
 import { LoginPromptOverlay } from "@/components/layout/login-prompt-overlay"
 import {
   PERFORMANCE_TABS,
@@ -266,8 +267,8 @@ function PerformanceChart({
 function PerformancePanel({ seriesKey }: { seriesKey: PerformanceSeriesKey }) {
   const [range, setRange] = useState<TimeRangeKey>("3M")
   const user = useSession()
-  const apiRange: Record<TimeRangeKey, "1w" | "1m" | "3m" | "1y" | "all"> = {
-    "1W": "1w", "1M": "1m", "3M": "3m", YTD: "1y", "1Y": "1y", ALL: "all",
+  const apiRange: Record<TimeRangeKey, PerformanceRange> = {
+    "1W": "1w", "1M": "1m", "3M": "3m", YTD: "YTD", "1Y": "1y", ALL: "all",
   }
   const { data, isLoading, error } = usePortfolioQuery(
     !!user,

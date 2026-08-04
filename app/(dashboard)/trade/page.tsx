@@ -24,6 +24,7 @@ import {
 import type { TradeOrder } from "@/lib/trade-orders"
 import { tradeBadgeClass } from "@/lib/trade-status"
 import { useSession } from "@/lib/auth"
+import { usePortfolioSummary } from "@/lib/portfolio"
 import { LoginPromptOverlay } from "@/components/layout/login-prompt-overlay"
 
 type TradeTab = "equity" | "options"
@@ -77,6 +78,7 @@ export default function TradePage() {
   const [orders, setOrders] = useState<TradeOrder[]>([])
   const user = useSession()
   const isLoggedIn = !!user
+  const { refresh: refreshPortfolioSummary } = usePortfolioSummary()
 
   const [symbol, setSymbol] = useState<string | null>(null)
   const [quote, setQuote] = useState<SecurityQuote | null>(null)
@@ -104,6 +106,7 @@ export default function TradePage() {
 
   function handleOrder(order: TradeOrder) {
     setOrders((current) => [order, ...current])
+    refreshPortfolioSummary()
   }
 
   return (

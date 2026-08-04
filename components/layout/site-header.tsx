@@ -1,6 +1,5 @@
 "use client"
 
-import { useEffect, useState } from "react"
 import Link from "next/link"
 import { ArrowRightLeft, TrendingDown, TrendingUp } from "lucide-react"
 
@@ -8,10 +7,9 @@ import { buttonVariants } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { SidebarTrigger } from "@/components/ui/sidebar"
 import { ThemeToggle } from "@/components/layout/theme-toggle"
-import { useSession } from "@/lib/auth"
 import { portfolioTotalValue } from "@/lib/mock/dashboard"
 import { getPerformanceSummary } from "@/lib/mock/performance"
-import { getPortfolioSummary, type PortfolioSummary } from "@/lib/portfolio"
+import { usePortfolioSummary } from "@/lib/portfolio"
 
 const mockPortfolio = getPerformanceSummary("all")
 
@@ -23,32 +21,10 @@ const currencyFormatter = new Intl.NumberFormat("en-US", {
 })
 
 export function SiteHeader() {
-  const user = useSession()
-  const [summary, setSummary] = useState<PortfolioSummary | null>(null)
+  const { summary } = usePortfolioSummary()
 
-  useEffect(() => {
-    let cancelled = false
-
-    if (!user) {
-      return
-    }
-
-    getPortfolioSummary()
-      .then((result) => {
-        if (!cancelled) setSummary(result)
-      })
-      .catch(() => {
-        if (!cancelled) setSummary(null)
-      })
-    return () => {
-      cancelled = true
-    }
-  }, [user])
-
-  const totalPortfolioValue = summary
-    ? summary.cashBalance + summary.totalMarketValue
-    : portfolioTotalValue
-  const totalBalance = summary ? summary.cashBalance : 0
+  const totalAssets = summary ? summary.totalMarketValue : portfolioTotalValue
+  const totalUsableCash = summary ? summary.cashBalance : 0
   const totalReturnPercent = summary
     ? summary.totalReturnPercent
     : mockPortfolio.totalReturnPercent
@@ -63,18 +39,18 @@ export function SiteHeader() {
       <div className="hidden items-center gap-6 md:flex">
         <div className="flex flex-col">
           <span className="text-muted-foreground text-[11px] font-medium tracking-wide uppercase">
-            Total Portfolio Value
+            Total Assets
           </span>
           <span className="text-sm font-semibold tabular-nums">
-            {currencyFormatter.format(totalPortfolioValue)}
+            {currencyFormatter.format(totalAssets)}
           </span>
         </div>
         <div className="flex flex-col">
           <span className="text-muted-foreground text-[11px] font-medium tracking-wide uppercase">
-            Total Balance
+            Total Usable Cash
           </span>
           <span className="text-sm font-semibold tabular-nums">
-            {currencyFormatter.format(totalBalance)}
+            {currencyFormatter.format(totalUsableCash)}
           </span>
         </div>
         <div className="flex flex-col">

@@ -147,6 +147,15 @@ const chartConfig: ChartConfig = {
   value: { label: "Portfolio Value", color: "var(--chart-1)" },
 }
 
+const API_RANGE: Record<TimeRangeKey, PerformanceRange> = {
+  "1W": "1w",
+  "1M": "1m",
+  "3M": "3m",
+  YTD: "YTD",
+  "1Y": "1y",
+  ALL: "all",
+}
+
 function PerformanceChart({
   seriesKey,
   range,
@@ -272,8 +281,8 @@ function PerformancePanel({ seriesKey }: { seriesKey: PerformanceSeriesKey }) {
   }
   const { data, isLoading, error } = usePortfolioQuery(
     !!user,
-    (api) => api.getPerformance(apiRange[range]),
-    [range]
+    (api) => api.getPerformance(API_RANGE[range], seriesKey),
+    [range, seriesKey]
   )
 
   const rangeConfig = TIME_RANGES.find((r) => r.value === range) ?? TIME_RANGES[0]

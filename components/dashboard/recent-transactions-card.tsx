@@ -47,8 +47,8 @@ export function RecentTransactionsCard() {
         type: transaction.transaction_type.toUpperCase() as "BUY" | "SELL",
         asset: transaction.symbol,
         qty: transaction.quantity,
-        price: transaction.price,
-        total: transaction.total_amount,
+        price: transaction.executed_unit_price,
+        total: transaction.executed_price,
       }))
     }
     return isLoggedIn ? [] : recentTransactions

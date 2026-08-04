@@ -251,15 +251,15 @@ export default function TransactionsPage() {
   const transactions = useMemo<TransactionRecord[]>(() => {
     if (data) {
       return data.items.map((transaction) => ({
-        id: String(transaction.transaction_id),
+        id: transaction.transaction_id,
         date: transaction.date.slice(0, 10),
         type: transaction.transaction_type.toUpperCase() as TransactionType,
         symbol: transaction.symbol,
         name: transaction.name,
         assetClass: assetClassFromApi(transaction.asset_type) as AssetClass,
         quantity: transaction.quantity,
-        price: transaction.price,
-        total: transaction.total_amount,
+        price: transaction.executed_unit_price,
+        total: transaction.executed_price,
         realizedGainDollar: transaction.realized_pl ?? null,
         realizedGainPercent: transaction.realized_pl_percent ?? null,
       }))

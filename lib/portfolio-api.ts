@@ -12,23 +12,17 @@ export type ApiHolding = {
   currency: string
 }
 
-/**
- * Expected item shape for GET /portfolios/transactions when implemented.
- * The backend currently returns 501 for this endpoint; the schema may be
- * refined when the listing endpoint is fully implemented.
- */
 export type ApiTransaction = {
-  asset_id: number
+  transaction_id: string
   asset_type: string
   date: string
   name: string
-  price: number
+  executed_unit_price: number
+  executed_price: number
   quantity: number
   realized_pl?: number | null
   realized_pl_percent?: number | null
   symbol: string
-  total_amount: number
-  transaction_id: number
   transaction_type: "buy" | "sell"
 }
 

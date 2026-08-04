@@ -63,6 +63,8 @@ export type PerformanceResponse = {
   }
 }
 
+export type PerformanceRange = "1w" | "1m" | "3m" | "YTD" | "1y" | "all"
+
 type Fetcher = typeof fetch
 
 export class PortfolioApiError extends Error {
@@ -117,7 +119,7 @@ export function createPortfolioApi(accessToken: string, fetcher: Fetcher = fetch
         search: params?.search,
         transaction_type: params?.transactionType,
       }),
-    getPerformance: (range: "1w" | "1m" | "3m" | "6m" | "1y" | "all") =>
+    getPerformance: (range: PerformanceRange) =>
       get<PerformanceResponse>("/api/v1/portfolios/performance", { range, interval: "1d" }),
   }
 }

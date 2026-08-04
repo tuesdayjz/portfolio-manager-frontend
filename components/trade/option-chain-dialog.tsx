@@ -56,8 +56,7 @@ export function OptionChainDialog({
   useEffect(() => {
     if (!open) return
     let cancelled = false
-    setLoading(true)
-    setError(null)
+
     getOptionChain(symbol, chainDate)
       .then((result) => {
         if (cancelled) return

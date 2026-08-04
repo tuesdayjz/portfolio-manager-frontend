@@ -12,6 +12,11 @@ export type ApiHolding = {
   currency: string
 }
 
+/**
+ * Expected item shape for GET /portfolios/transactions when implemented.
+ * The backend currently returns 501 for this endpoint; the schema may be
+ * refined when the listing endpoint is fully implemented.
+ */
 export type ApiTransaction = {
   asset_id: number
   asset_type: string
@@ -30,7 +35,8 @@ export type ApiTransaction = {
 export type AllocationResponse = {
   as_of: string
   currency: string
-  items: { holdings_count: number; name: string; value: number; weight: number }[]
+  group_by: string
+  items: { holdings_count: number; category: string; value: number; weight: number }[]
   total_value: number
 }
 

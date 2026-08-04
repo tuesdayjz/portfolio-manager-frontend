@@ -277,17 +277,25 @@ export function CandlestickChart({
 
   // Reset the zoom window to the selected period's default whenever its
   // backing dataset (re)loads, e.g. after a symbol switch.
+  const prevDailyLengthRef = useRef<number | null>(null)
   useEffect(() => {
     if (period === "1D") return
-    setZoomRange(defaultZoomFor(period, dailyCandles?.length ?? 0))
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dailyCandles])
+    const len = dailyCandles?.length ?? 0
+    if (prevDailyLengthRef.current !== len) {
+      prevDailyLengthRef.current = len
+      setZoomRange(defaultZoomFor(period, len))
+    }
+  }, [period, dailyCandles])
 
+  const prevIntradayLengthRef = useRef<number | null>(null)
   useEffect(() => {
     if (period !== "1D") return
-    setZoomRange(defaultZoomFor(period, intradayCandles?.length ?? 0))
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [intradayCandles])
+    const len = intradayCandles?.length ?? 0
+    if (prevIntradayLengthRef.current !== len) {
+      prevIntradayLengthRef.current = len
+      setZoomRange(defaultZoomFor(period, len))
+    }
+  }, [period, intradayCandles])
 
   function handlePeriodChange(next: ChartPeriod) {
     setPeriod(next)
@@ -347,8 +355,13 @@ export function CandlestickChart({
   const handleDragEnd = useCallback(() => {
     dragRef.current = null
     window.removeEventListener("mousemove", handleDragMove)
-    window.removeEventListener("mouseup", handleDragEnd)
   }, [handleDragMove])
+
+  useEffect(() => {
+    const onMouseUp = () => handleDragEnd()
+    window.addEventListener("mouseup", onMouseUp)
+    return () => window.removeEventListener("mouseup", onMouseUp)
+  }, [handleDragEnd])
 
   function handleDragStart(e: React.MouseEvent) {
     if (e.button !== 0 || !candles || candles.length === 0) return

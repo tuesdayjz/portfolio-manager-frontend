@@ -3,7 +3,6 @@ import {
   History,
   LayoutDashboard,
   LineChart,
-  PieChart,
   Settings,
   Wallet,
   type LucideIcon,

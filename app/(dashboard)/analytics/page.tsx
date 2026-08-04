@@ -1,7 +1,7 @@
 "use client"
 
 import { useMemo, useState } from "react"
-import { TrendingDown, TrendingUp } from "lucide-react"
+import { AlertCircle, TrendingDown, TrendingUp } from "lucide-react"
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts"
 
 import {
@@ -12,6 +12,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
+import { Skeleton } from "@/components/ui/skeleton"
 import {
   ChartContainer,
   ChartTooltip,
@@ -48,8 +49,6 @@ function formatSigned(value: number, formatter: (v: number) => string) {
 
 function formatAxisDate(dateStr: string, rangeDays: number) {
   const date = new Date(`${dateStr}T00:00:00Z`)
-  // Always include two distinguishing fields so ticks never repeat
-  // identically (e.g. a bare "Jul" for every point in a multi-month range).
   return rangeDays <= 180
     ? new Intl.DateTimeFormat("en-US", { timeZone: "UTC", month: "short", day: "numeric" }).format(
         date
@@ -132,6 +131,17 @@ function StatTile({
   )
 }
 
+function StatTileSkeleton() {
+  return (
+    <Card size="sm">
+      <CardHeader>
+        <Skeleton className="h-3 w-24" />
+        <Skeleton className="h-6 w-32" />
+      </CardHeader>
+    </Card>
+  )
+}
+
 const chartConfig: ChartConfig = {
   value: { label: "Portfolio Value", color: "var(--chart-1)" },
 }
@@ -141,11 +151,13 @@ function PerformanceChart({
   range,
   onRangeChange,
   points,
+  isLoading,
 }: {
   seriesKey: PerformanceSeriesKey
   range: TimeRangeKey
   onRangeChange: (range: TimeRangeKey) => void
   points?: { date: string; value: number }[]
+  isLoading?: boolean
 }) {
   const rangeConfig = TIME_RANGES.find((r) => r.value === range) ?? TIME_RANGES[0]
 
@@ -154,6 +166,32 @@ function PerformanceChart({
     [seriesKey, rangeConfig.days]
   )
   const slice = { points: points ?? mockSlice.points }
+
+  if (isLoading) {
+    return (
+      <Card>
+        <CardHeader className="@container/card-header">
+          <CardTitle>Portfolio Value</CardTitle>
+          <CardDescription>Market value of holdings over time.</CardDescription>
+          <CardAction>
+            <SegmentedToggle
+              value={range}
+              onChange={onRangeChange}
+              options={TIME_RANGES.map((r) => ({ value: r.value, label: r.label }))}
+              className="w-auto"
+            />
+          </CardAction>
+        </CardHeader>
+        <CardContent>
+          <ChartContainer config={chartConfig} className="aspect-auto h-72 w-full">
+            <div className="h-full w-full flex items-center justify-center">
+              <Skeleton className="h-72 w-full" />
+            </div>
+          </ChartContainer>
+        </CardContent>
+      </Card>
+    )
+  }
 
   return (
     <Card>
@@ -231,7 +269,7 @@ function PerformancePanel({ seriesKey }: { seriesKey: PerformanceSeriesKey }) {
   const apiRange: Record<TimeRangeKey, "1w" | "1m" | "3m" | "1y" | "all"> = {
     "1W": "1w", "1M": "1m", "3M": "3m", YTD: "1y", "1Y": "1y", ALL: "all",
   }
-  const { data } = usePortfolioQuery(
+  const { data, isLoading, error } = usePortfolioQuery(
     !!user,
     (api) => api.getPerformance(apiRange[range]),
     [range]
@@ -258,6 +296,39 @@ function PerformancePanel({ seriesKey }: { seriesKey: PerformanceSeriesKey }) {
         periodReturnPercent: data.metrics.return.percent,
       }
     : mockSlice
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col gap-4">
+        <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+          <StatTileSkeleton />
+          <StatTileSkeleton />
+          <StatTileSkeleton />
+          <StatTileSkeleton />
+        </div>
+        <PerformanceChart seriesKey={seriesKey} range={range} onRangeChange={setRange} isLoading={true} />
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <Card className="border-destructive">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-destructive">
+            <AlertCircle className="size-4" />
+            Failed to load analytics
+          </CardTitle>
+          <CardDescription>{error.message}</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground">
+            Please check your connection and try again. If the problem persists, contact support.
+          </p>
+        </CardContent>
+      </Card>
+    )
+  }
 
   return (
     <div className="flex flex-col gap-4">

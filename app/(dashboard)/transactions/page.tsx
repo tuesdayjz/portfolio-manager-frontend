@@ -250,16 +250,16 @@ export default function TransactionsPage() {
   // Only use mock data for non-logged-in users
   const transactions = useMemo<TransactionRecord[]>(() => {
     if (data) {
-      return data.items.map((transaction) => ({
-        id: String(transaction.transaction_id),
+      return data.items.map((transaction, index) => ({
+        id: String(transaction.transaction_id ?? index),
         date: transaction.date.slice(0, 10),
-        type: transaction.transaction_type.toUpperCase() as TransactionType,
+        type: ((transaction.transaction_type ?? "BUY").toUpperCase()) as TransactionType,
         symbol: transaction.symbol,
         name: transaction.name,
         assetClass: assetClassFromApi(transaction.asset_type) as AssetClass,
-        quantity: transaction.quantity,
-        price: transaction.price,
-        total: transaction.total_amount,
+        quantity: transaction.quantity ?? (transaction.executed_unit_price > 0 ? transaction.executed_price / transaction.executed_unit_price : 1),
+        price: transaction.price ?? transaction.executed_unit_price,
+        total: transaction.total_amount ?? transaction.executed_price,
         realizedGainDollar: transaction.realized_pl ?? null,
         realizedGainPercent: transaction.realized_pl_percent ?? null,
       }))

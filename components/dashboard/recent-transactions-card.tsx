@@ -44,11 +44,11 @@ export function RecentTransactionsCard() {
           day: "2-digit",
           year: "numeric",
         }).format(new Date(transaction.date)),
-        type: transaction.transaction_type.toUpperCase() as "BUY" | "SELL",
+        type: ((transaction.transaction_type ?? "BUY").toUpperCase()) as "BUY" | "SELL",
         asset: transaction.symbol,
-        qty: transaction.quantity,
-        price: transaction.price,
-        total: transaction.total_amount,
+        qty: transaction.quantity ?? (transaction.executed_unit_price > 0 ? transaction.executed_price / transaction.executed_unit_price : 1),
+        price: transaction.price ?? transaction.executed_unit_price,
+        total: transaction.total_amount ?? transaction.executed_price,
       }))
     }
     return isLoggedIn ? [] : recentTransactions

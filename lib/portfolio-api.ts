@@ -18,18 +18,19 @@ export type ApiHolding = {
  * refined when the listing endpoint is fully implemented.
  */
 export type ApiTransaction = {
-  asset_id: number
-  asset_type: string
   date: string
+  symbol: string
   name: string
-  price: number
-  quantity: number
+  asset_type: string
+  executed_price: number
+  executed_unit_price: number
+  quantity?: number
+  price?: number
+  total_amount?: number
+  transaction_type?: "buy" | "sell"
+  transaction_id?: string | number
   realized_pl?: number | null
   realized_pl_percent?: number | null
-  symbol: string
-  total_amount: number
-  transaction_id: number
-  transaction_type: "buy" | "sell"
 }
 
 export type AllocationResponse = {

@@ -5,6 +5,10 @@ export type TransactionRequest = {
   name: string
   transactionType: TradeAction
   quantity: number
+  // Present only for a backdated ("Insert Past Trade") order — the trade date
+  // (yyyy-mm-dd) and the historical price the user entered for that date.
+  tradeDate?: string
+  price?: number
 }
 
 export type TransactionResult = {
@@ -29,6 +33,8 @@ export async function createTransaction(
       order_type: "market",
       transaction_type: order.transactionType,
       quantity: order.quantity,
+      ...(order.tradeDate ? { trade_date: order.tradeDate } : {}),
+      ...(order.price !== undefined ? { price: order.price } : {}),
     }),
   })
 

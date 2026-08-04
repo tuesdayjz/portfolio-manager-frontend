@@ -36,10 +36,12 @@ test("uses the documented allocation and performance endpoints", async () => {
 
   await api.getAllocation()
   await api.getPerformance("3m")
+  await api.getPerformance("YTD", "crypto")
 
   assert.deepEqual(urls, [
     "https://api.example.test/api/v1/portfolios/allocation?group_by=asset_type",
-    "https://api.example.test/api/v1/portfolios/performance?range=3m&interval=1d",
+    "https://api.example.test/api/v1/portfolios/performance?range=3m&interval=1d&asset_type=all",
+    "https://api.example.test/api/v1/portfolios/performance?range=YTD&interval=1d&asset_type=crypto",
   ])
 })
 

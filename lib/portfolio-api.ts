@@ -54,6 +54,7 @@ export type TransactionsResponse = {
 
 export type PerformanceResponse = {
   currency: string
+  asset_type: string
   points: { date: string; total_market_value: number }[]
   metrics: {
     portfolio_value: number
@@ -62,6 +63,15 @@ export type PerformanceResponse = {
     total_return: { amount: number; percent: number }
   }
 }
+
+/** The `range` selectors accepted by GET /portfolios/performance. */
+export type PerformanceRange = "1d" | "1w" | "1m" | "3m" | "YTD" | "1y" | "all"
+
+/**
+ * The `asset_type` filter accepted by the portfolio endpoints. `"all"` is the
+ * API's own value for "no filter", so it is sent as-is rather than omitted.
+ */
+export type PerformanceAssetType = "all" | "stock" | "bond" | "etf" | "crypto"
 
 type Fetcher = typeof fetch
 
@@ -117,7 +127,11 @@ export function createPortfolioApi(accessToken: string, fetcher: Fetcher = fetch
         search: params?.search,
         transaction_type: params?.transactionType,
       }),
-    getPerformance: (range: "1w" | "1m" | "3m" | "6m" | "1y" | "all") =>
-      get<PerformanceResponse>("/api/v1/portfolios/performance", { range, interval: "1d" }),
+    getPerformance: (range: PerformanceRange, assetType: PerformanceAssetType = "all") =>
+      get<PerformanceResponse>("/api/v1/portfolios/performance", {
+        range,
+        interval: "1d",
+        asset_type: assetType,
+      }),
   }
 }

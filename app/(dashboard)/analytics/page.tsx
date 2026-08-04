@@ -24,6 +24,7 @@ import { Tabs, TabsIndicator, TabsList, TabsTab } from "@/components/ui/tabs"
 import { cn } from "@/lib/utils"
 import { useSession } from "@/lib/auth"
 import { usePortfolioQuery } from "@/hooks/use-portfolio-query"
+import type { PerformanceRange } from "@/lib/portfolio-api"
 import { LoginPromptOverlay } from "@/components/layout/login-prompt-overlay"
 import {
   PERFORMANCE_TABS,
@@ -146,6 +147,15 @@ const chartConfig: ChartConfig = {
   value: { label: "Portfolio Value", color: "var(--chart-1)" },
 }
 
+const API_RANGE: Record<TimeRangeKey, PerformanceRange> = {
+  "1W": "1w",
+  "1M": "1m",
+  "3M": "3m",
+  YTD: "YTD",
+  "1Y": "1y",
+  ALL: "all",
+}
+
 function PerformanceChart({
   seriesKey,
   range,
@@ -266,13 +276,10 @@ function PerformanceChart({
 function PerformancePanel({ seriesKey }: { seriesKey: PerformanceSeriesKey }) {
   const [range, setRange] = useState<TimeRangeKey>("3M")
   const user = useSession()
-  const apiRange: Record<TimeRangeKey, "1w" | "1m" | "3m" | "1y" | "all"> = {
-    "1W": "1w", "1M": "1m", "3M": "3m", YTD: "1y", "1Y": "1y", ALL: "all",
-  }
   const { data, isLoading, error } = usePortfolioQuery(
     !!user,
-    (api) => api.getPerformance(apiRange[range]),
-    [range]
+    (api) => api.getPerformance(API_RANGE[range], seriesKey),
+    [range, seriesKey]
   )
 
   const rangeConfig = TIME_RANGES.find((r) => r.value === range) ?? TIME_RANGES[0]

@@ -33,18 +33,39 @@ const PERIOD_CONFIG: Record<string, { range: string; interval: string }> = {
 export async function GET(request: NextRequest) {
   const symbol = request.nextUrl.searchParams.get("symbol")?.trim()
   const period = request.nextUrl.searchParams.get("period")?.trim() ?? "1M"
+  const date = request.nextUrl.searchParams.get("date")?.trim()
 
   if (!symbol) {
     return NextResponse.json({ error: "Missing symbol." }, { status: 400 })
   }
 
-  const config = PERIOD_CONFIG[period] ?? PERIOD_CONFIG["1M"]
-
   const url = new URL(
     `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}`
   )
-  url.searchParams.set("range", config.range)
-  url.searchParams.set("interval", config.interval)
+
+  if (date) {
+    // A specific-date lookup (e.g. prefilling the EOD price for a backdated
+    // trade): request a window ending the day after `date` so Yahoo's range
+    // is inclusive, and starting a week earlier so the last daily candle in
+    // the response is `date`'s close, or the prior trading day's close if
+    // `date` fell on a weekend/holiday.
+    const target = new Date(`${date}T00:00:00Z`)
+    if (Number.isNaN(target.getTime())) {
+      return NextResponse.json({ error: "Invalid date." }, { status: 400 })
+    }
+    const period1 = new Date(target)
+    period1.setUTCDate(period1.getUTCDate() - 7)
+    const period2 = new Date(target)
+    period2.setUTCDate(period2.getUTCDate() + 1)
+
+    url.searchParams.set("period1", String(Math.floor(period1.getTime() / 1000)))
+    url.searchParams.set("period2", String(Math.floor(period2.getTime() / 1000)))
+    url.searchParams.set("interval", "1d")
+  } else {
+    const config = PERIOD_CONFIG[period] ?? PERIOD_CONFIG["1M"]
+    url.searchParams.set("range", config.range)
+    url.searchParams.set("interval", config.interval)
+  }
 
   try {
     const res = await fetch(url, { headers: YAHOO_HEADERS, cache: "no-store" })

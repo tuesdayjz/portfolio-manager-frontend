@@ -350,12 +350,12 @@ function PerformancePanel({ seriesKey }: { seriesKey: PerformanceSeriesKey }) {
           delta={{ dollar: summary.todayChangeDollar, percent: summary.todayChangePercent }}
         />
         <StatTile
-          label={`Return (${rangeConfig.label})`}
+          label={`Gain/Loss (${rangeConfig.label})`}
           value={formatSigned(slice.periodReturnDollar, formatCurrency)}
           delta={{ dollar: slice.periodReturnDollar, percent: slice.periodReturnPercent }}
         />
         <StatTile
-          label="Total Return"
+          label="Total Gain/Loss"
           value={formatSigned(summary.totalReturnDollar, formatCurrency)}
           delta={{ dollar: summary.totalReturnDollar, percent: summary.totalReturnPercent }}
         />

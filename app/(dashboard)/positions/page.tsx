@@ -55,17 +55,30 @@ function formatPrice(value: number) {
   })
 }
 
-function DayChange({ percent }: { percent: number }) {
-  const positive = percent >= 0
+function GainLoss({
+  dollar,
+  percent,
+}: {
+  dollar: number | null
+  percent: number | null
+}) {
+  if (dollar === null || percent === null) {
+    return <span className="text-muted-foreground">—</span>
+  }
+
+  const positive = dollar >= 0
+  const Icon = positive ? TrendingUp : TrendingDown
   return (
     <span
       className={cn(
-        "inline-flex rounded-full px-2 py-0.5 text-xs font-medium tabular-nums",
-        deltaBadgeClass(percent)
+        "inline-flex items-center justify-end gap-1.5 font-medium tabular-nums",
+        positive ? "text-chart-3" : "text-destructive"
       )}
     >
+      <Icon className="size-3.5 shrink-0" />
       {positive ? "+" : ""}
-      {percent.toFixed(2)}%
+      {formatCurrency(dollar)} ({positive ? "+" : ""}
+      {percent.toFixed(2)}%)
     </span>
   )
 }
@@ -153,8 +166,7 @@ function SortableHeader({
 }
 
 // Shared column widths so the columns that Long Holdings and Options have
-// in common (Symbol, Avg Price, Current Price, Today, Market Value) line up
-// vertically between the two stacked tables.
+// in common line up cleanly.
 const COLUMN_WIDTH = {
   symbol: 200,
   assetClass: 110,
@@ -164,10 +176,22 @@ const COLUMN_WIDTH = {
   count: 90,
   avgPrice: 100,
   currentPrice: 108,
-  today: 132,
+  today: 240,
   marketValue: 130,
 }
 
+const HOLDINGS_COLUMN_WIDTHS = [
+  COLUMN_WIDTH.symbol,
+  COLUMN_WIDTH.assetClass,
+  COLUMN_WIDTH.type,
+  COLUMN_WIDTH.count,
+  COLUMN_WIDTH.avgPrice,
+  COLUMN_WIDTH.currentPrice,
+  COLUMN_WIDTH.today,
+  COLUMN_WIDTH.marketValue,
+]
+
+const HOLDINGS_TABLE_MIN_WIDTH = HOLDINGS_COLUMN_WIDTHS.reduce((a, b) => a + b, 0)
 const TABLE_MIN_WIDTH = Object.values(COLUMN_WIDTH).reduce((a, b) => a + b, 0)
 
 function HoldingsTable({ positions }: { positions: HoldingPosition[] }) {
@@ -189,10 +213,14 @@ function HoldingsTable({ positions }: { positions: HoldingPosition[] }) {
     if (!sort) return positions
     const factor = sort.dir === "asc" ? 1 : -1
     return [...positions].sort((a, b) => {
-      const aValue =
-        sort.key === "today" ? a.dayChangePercent : a.quantity * a.currentPrice
-      const bValue =
-        sort.key === "today" ? b.dayChangePercent : b.quantity * b.currentPrice
+      const aGain =
+        (a.side === "short" ? a.avgPrice - a.currentPrice : a.currentPrice - a.avgPrice) *
+        a.quantity
+      const bGain =
+        (b.side === "short" ? b.avgPrice - b.currentPrice : b.currentPrice - b.avgPrice) *
+        b.quantity
+      const aValue = sort.key === "today" ? aGain : a.quantity * a.currentPrice
+      const bValue = sort.key === "today" ? bGain : b.quantity * b.currentPrice
       return (aValue - bValue) * factor
     })
   }, [positions, sort])
@@ -208,7 +236,7 @@ function HoldingsTable({ positions }: { positions: HoldingPosition[] }) {
         <CardDescription>{formatCurrency(marketValue)} market value</CardDescription>
         <CardAction className="flex flex-col items-end gap-0.5">
           <span className="text-[11px] font-medium tracking-wide text-muted-foreground uppercase">
-            Total Return
+            Total Unrealized Gain/Loss for Current Holdings
           </span>
           <TotalReturn dollar={totalReturnDollar} percent={totalReturnPercent} />
         </CardAction>
@@ -222,14 +250,12 @@ function HoldingsTable({ positions }: { positions: HoldingPosition[] }) {
           <div className="overflow-x-auto">
             <table
               className="w-full table-fixed text-sm"
-              style={{ minWidth: TABLE_MIN_WIDTH }}
+              style={{ minWidth: HOLDINGS_TABLE_MIN_WIDTH }}
             >
               <colgroup>
                 <col style={{ width: COLUMN_WIDTH.symbol }} />
                 <col style={{ width: COLUMN_WIDTH.assetClass }} />
                 <col style={{ width: COLUMN_WIDTH.type }} />
-                <col style={{ width: COLUMN_WIDTH.strike }} />
-                <col style={{ width: COLUMN_WIDTH.expiry }} />
                 <col style={{ width: COLUMN_WIDTH.count }} />
                 <col style={{ width: COLUMN_WIDTH.avgPrice }} />
                 <col style={{ width: COLUMN_WIDTH.currentPrice }} />
@@ -241,13 +267,11 @@ function HoldingsTable({ positions }: { positions: HoldingPosition[] }) {
                   <th className="py-1.5 pr-4 font-medium">Symbol</th>
                   <th className="py-1.5 pr-4 font-medium">Asset Class</th>
                   <th className="py-1.5 pr-4 font-medium">Side</th>
-                  <th className="py-1.5 pr-4 font-medium" aria-hidden />
-                  <th className="py-1.5 pr-4 font-medium" aria-hidden />
                   <th className="py-1.5 pr-4 font-medium">Quantity</th>
                   <th className="py-1.5 pr-4 font-medium">Avg Price</th>
                   <th className="py-1.5 pr-4 font-medium">Current Price</th>
                   <SortableHeader sort={sort} sortKey="today" onSort={handleSort}>
-                    Today
+                    Unrealized Gain/Loss
                   </SortableHeader>
                   <SortableHeader sort={sort} sortKey="marketValue" onSort={handleSort}>
                     Market Value
@@ -255,33 +279,41 @@ function HoldingsTable({ positions }: { positions: HoldingPosition[] }) {
                 </tr>
               </thead>
               <tbody>
-                {sortedPositions.map((position) => (
-                  <tr key={position.symbol} className="border-b last:border-0">
-                    <td className="py-1.5 pr-4">
-                      <div className="font-medium">{position.symbol}</div>
-                      <div className="text-xs text-muted-foreground">{position.name}</div>
-                    </td>
-                    <td className="py-1.5 pr-4">
-                      <AssetClassBadge assetClass={position.assetClass} />
-                    </td>
-                    <td className="py-1.5 pr-4">
-                      <Badge variant="secondary" className={`capitalize ${tradeBadgeClass}`}>
-                        {position.side}
-                      </Badge>
-                    </td>
-                    <td className="py-1.5 pr-4 text-muted-foreground">—</td>
-                    <td className="py-1.5 pr-4 text-muted-foreground">—</td>
-                    <td className="py-1.5 pr-4">{position.quantity.toLocaleString()}</td>
-                    <td className="py-1.5 pr-4">{formatPrice(position.avgPrice)}</td>
-                    <td className="py-1.5 pr-4">{formatPrice(position.currentPrice)}</td>
-                    <td className="py-1.5 pr-4 text-right tabular-nums">
-                      <DayChange percent={position.dayChangePercent} />
-                    </td>
-                    <td className="py-1.5 pr-0 text-right">
-                      {formatCurrency(position.quantity * position.currentPrice)}
-                    </td>
-                  </tr>
-                ))}
+                {sortedPositions.map((position) => {
+                  const gainDollar =
+                    (position.side === "short"
+                      ? position.avgPrice - position.currentPrice
+                      : position.currentPrice - position.avgPrice) * position.quantity
+                  const costBasis = position.quantity * position.avgPrice
+                  const gainPercent =
+                    costBasis !== 0 ? (gainDollar / costBasis) * 100 : 0
+
+                  return (
+                    <tr key={position.symbol} className="border-b last:border-0">
+                      <td className="py-1.5 pr-4">
+                        <div className="font-medium">{position.symbol}</div>
+                        <div className="text-xs text-muted-foreground">{position.name}</div>
+                      </td>
+                      <td className="py-1.5 pr-4">
+                        <AssetClassBadge assetClass={position.assetClass} />
+                      </td>
+                      <td className="py-1.5 pr-4">
+                        <Badge variant="secondary" className={`capitalize ${tradeBadgeClass}`}>
+                          {position.side}
+                        </Badge>
+                      </td>
+                      <td className="py-1.5 pr-4">{position.quantity.toLocaleString()}</td>
+                      <td className="py-1.5 pr-4">{formatPrice(position.avgPrice)}</td>
+                      <td className="py-1.5 pr-4">{formatPrice(position.currentPrice)}</td>
+                      <td className="py-1.5 pr-4 text-right">
+                        <GainLoss dollar={gainDollar} percent={gainPercent} />
+                      </td>
+                      <td className="py-1.5 pr-0 text-right">
+                        {formatCurrency(position.quantity * position.currentPrice)}
+                      </td>
+                    </tr>
+                  )
+                })}
               </tbody>
             </table>
           </div>
@@ -309,10 +341,10 @@ function OptionsTable({ positions }: { positions: OptionPosition[] }) {
     if (!sort) return positions
     const factor = sort.dir === "asc" ? 1 : -1
     return [...positions].sort((a, b) => {
-      const aValue =
-        sort.key === "today" ? a.dayChangePercent : a.contracts * a.currentPrice
-      const bValue =
-        sort.key === "today" ? b.dayChangePercent : b.contracts * b.currentPrice
+      const aGain = (a.currentPrice - a.avgPrice) * a.contracts
+      const bGain = (b.currentPrice - b.avgPrice) * b.contracts
+      const aValue = sort.key === "today" ? aGain : a.contracts * a.currentPrice
+      const bValue = sort.key === "today" ? bGain : b.contracts * b.currentPrice
       return (aValue - bValue) * factor
     })
   }, [positions, sort])
@@ -367,7 +399,7 @@ function OptionsTable({ positions }: { positions: OptionPosition[] }) {
                   <th className="py-1.5 pr-4 font-medium">Avg Price</th>
                   <th className="py-1.5 pr-4 font-medium">Current Price</th>
                   <SortableHeader sort={sort} sortKey="today" onSort={handleSort}>
-                    Today
+                    Unrealized Gain/Loss
                   </SortableHeader>
                   <SortableHeader sort={sort} sortKey="marketValue" onSort={handleSort}>
                     Market Value
@@ -375,36 +407,44 @@ function OptionsTable({ positions }: { positions: OptionPosition[] }) {
                 </tr>
               </thead>
               <tbody>
-                {sortedPositions.map((position) => (
-                  <tr
-                    key={`${position.symbol}-${position.optionType}-${position.strike}-${position.expiry}`}
-                    className="border-b last:border-0"
-                  >
-                    <td className="py-1.5 pr-4">
-                      <div className="font-medium">{position.symbol}</div>
-                      <div className="text-xs text-muted-foreground">{position.name}</div>
-                    </td>
-                    <td className="py-1.5 pr-4">
-                      <AssetClassBadge assetClass={position.assetClass} />
-                    </td>
-                    <td className="py-1.5 pr-4">
-                      <Badge variant="outline" className="capitalize">
-                        {position.optionType}
-                      </Badge>
-                    </td>
-                    <td className="py-1.5 pr-4">{formatPrice(position.strike)}</td>
-                    <td className="py-1.5 pr-4">{position.expiry}</td>
-                    <td className="py-1.5 pr-4">{position.contracts.toLocaleString()}</td>
-                    <td className="py-1.5 pr-4">{formatPrice(position.avgPrice)}</td>
-                    <td className="py-1.5 pr-4">{formatPrice(position.currentPrice)}</td>
-                    <td className="py-1.5 pr-4 text-right tabular-nums">
-                      <DayChange percent={position.dayChangePercent} />
-                    </td>
-                    <td className="py-1.5 pr-0 text-right">
-                      {formatCurrency(position.contracts * position.currentPrice)}
-                    </td>
-                  </tr>
-                ))}
+                {sortedPositions.map((position) => {
+                  const gainDollar =
+                    (position.currentPrice - position.avgPrice) * position.contracts
+                  const costBasis = position.contracts * position.avgPrice
+                  const gainPercent =
+                    costBasis !== 0 ? (gainDollar / costBasis) * 100 : 0
+
+                  return (
+                    <tr
+                      key={`${position.symbol}-${position.optionType}-${position.strike}-${position.expiry}`}
+                      className="border-b last:border-0"
+                    >
+                      <td className="py-1.5 pr-4">
+                        <div className="font-medium">{position.symbol}</div>
+                        <div className="text-xs text-muted-foreground">{position.name}</div>
+                      </td>
+                      <td className="py-1.5 pr-4">
+                        <AssetClassBadge assetClass={position.assetClass} />
+                      </td>
+                      <td className="py-1.5 pr-4">
+                        <Badge variant="outline" className="capitalize">
+                          {position.optionType}
+                        </Badge>
+                      </td>
+                      <td className="py-1.5 pr-4">{formatPrice(position.strike)}</td>
+                      <td className="py-1.5 pr-4">{position.expiry}</td>
+                      <td className="py-1.5 pr-4">{position.contracts.toLocaleString()}</td>
+                      <td className="py-1.5 pr-4">{formatPrice(position.avgPrice)}</td>
+                      <td className="py-1.5 pr-4">{formatPrice(position.currentPrice)}</td>
+                      <td className="py-1.5 pr-4 text-right">
+                        <GainLoss dollar={gainDollar} percent={gainPercent} />
+                      </td>
+                      <td className="py-1.5 pr-0 text-right">
+                        {formatCurrency(position.contracts * position.currentPrice)}
+                      </td>
+                    </tr>
+                  )
+                })}
               </tbody>
             </table>
           </div>

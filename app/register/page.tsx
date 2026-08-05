@@ -24,6 +24,7 @@ function RegisterPageContent() {
   const [fullName, setFullName] = useState("")
   const [password, setPassword] = useState("")
   const [dob, setDob] = useState("")
+  const [startingBalance, setStartingBalance] = useState("")
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [confirmationSent, setConfirmationSent] = useState(false)
@@ -64,7 +65,7 @@ function RegisterPageContent() {
     event.preventDefault()
     setError(null)
 
-    if (!email || !fullName || !password || !dob) {
+    if (!email || !fullName || !password || !dob || !startingBalance) {
       setError("Please fill out every field.")
       return
     }
@@ -74,9 +75,15 @@ function RegisterPageContent() {
       return
     }
 
+    const balance = Number(startingBalance)
+    if (!Number.isFinite(balance) || balance < 0) {
+      setError("Starting balance must be a non-negative number.")
+      return
+    }
+
     setSubmitting(true)
     try {
-      await registerUser({ email, password, fullName, dob })
+      await registerUser({ email, password, fullName, dob, startingBalance: balance })
       setConfirmationSent(true)
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong.")
@@ -145,6 +152,20 @@ function RegisterPageContent() {
                 autoComplete="new-password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                required
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="startingBalance">Starting balance (USD)</Label>
+              <Input
+                id="startingBalance"
+                type="number"
+                inputMode="decimal"
+                min={0}
+                step="0.01"
+                placeholder="e.g. 100000"
+                value={startingBalance}
+                onChange={(e) => setStartingBalance(e.target.value)}
                 required
               />
             </div>

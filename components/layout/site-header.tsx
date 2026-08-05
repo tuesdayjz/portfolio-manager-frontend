@@ -15,6 +15,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 import { ThemeToggle } from "@/components/layout/theme-toggle"
+import { CapitalDialog } from "@/components/trade/capital-dialog"
 import { portfolioTotalValue } from "@/lib/mock/dashboard"
 import { getPerformanceSummary } from "@/lib/mock/performance"
 import { usePortfolioSummary } from "@/lib/portfolio"
@@ -126,6 +127,7 @@ export function SiteHeader() {
       </div>
 
       <div className="ml-auto flex items-center gap-2">
+        {summary && <CapitalDialog />}
         <Link href="/trade" className={buttonVariants({ size: "sm" })}>
           <ArrowRightLeft />
           Trade

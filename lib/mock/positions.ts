@@ -1,4 +1,4 @@
-export type AssetClass = "equities" | "fx" | "fixed-income" | "commodities"
+export type AssetClass = "equities" | "fx" | "bonds" | "commodities"
 
 export type HoldingSide = "long" | "short"
 
@@ -29,7 +29,7 @@ export type OptionPosition = {
 export const ASSET_CLASSES: { value: AssetClass; label: string }[] = [
   { value: "equities", label: "Equities" },
   { value: "fx", label: "Forex" },
-  { value: "fixed-income", label: "Fixed Income" },
+  { value: "bonds", label: "Bonds" },
   { value: "commodities", label: "Commodities" },
 ]
 
@@ -97,7 +97,7 @@ export const HOLDINGS: HoldingPosition[] = [
   {
     symbol: "UST10Y",
     name: "US Treasury 10-Year Note",
-    assetClass: "fixed-income",
+    assetClass: "bonds",
     side: "long",
     quantity: 25,
     avgPrice: 98.75,
@@ -107,7 +107,7 @@ export const HOLDINGS: HoldingPosition[] = [
   {
     symbol: "LQD",
     name: "iShares Investment Grade Corp Bond ETF",
-    assetClass: "fixed-income",
+    assetClass: "bonds",
     side: "long",
     quantity: 200,
     avgPrice: 106.3,
@@ -117,7 +117,7 @@ export const HOLDINGS: HoldingPosition[] = [
   {
     symbol: "MUB",
     name: "iShares National Muni Bond ETF",
-    assetClass: "fixed-income",
+    assetClass: "bonds",
     side: "long",
     quantity: 150,
     avgPrice: 104.2,
@@ -196,7 +196,7 @@ export const OPTION_POSITIONS: OptionPosition[] = [
   {
     symbol: "UST10Y",
     name: "US Treasury 10-Year Note",
-    assetClass: "fixed-income",
+    assetClass: "bonds",
     optionType: "put",
     strike: 96,
     expiry: "2026-10-16",

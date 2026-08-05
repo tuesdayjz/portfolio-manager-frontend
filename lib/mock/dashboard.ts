@@ -16,14 +16,14 @@ export type AllocationSlice = {
 const ASSET_CLASS_LABELS: Record<AssetClass, string> = {
   equities: "Equities",
   fx: "Forex",
-  "fixed-income": "Fixed Income",
+  bonds: "Bonds",
   commodities: "Commodities",
 }
 
 const ASSET_CLASS_COLORS: Record<AssetClass, string> = {
   equities: "var(--chart-1)",
   fx: "var(--chart-2)",
-  "fixed-income": "var(--chart-3)",
+  bonds: "var(--chart-3)",
   commodities: "var(--chart-4)",
 }
 

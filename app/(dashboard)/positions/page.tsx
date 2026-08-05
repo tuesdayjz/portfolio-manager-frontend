@@ -72,7 +72,7 @@ function DayChange({ percent }: { percent: number }) {
 function assetClassFromApi(assetType: string): AssetClass {
   const type = assetType.toLowerCase()
   if (type.includes("fx") || type.includes("forex") || type.includes("currency")) return "fx"
-  if (type.includes("bond") || type.includes("fixed")) return "fixed-income"
+  if (type.includes("bond") || type.includes("fixed")) return "bonds"
   if (type.includes("commodity") || type.includes("metal") || type.includes("energy")) return "commodities"
   return "equities"
 }

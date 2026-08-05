@@ -2,6 +2,7 @@ import { useEffect, useState } from "react"
 import type { User } from "@supabase/supabase-js"
 
 import { createClient } from "@/lib/supabase/client"
+import { createInitialPortfolio } from "@/lib/portfolio-setup"
 
 export type SessionUser = {
   email: string
@@ -42,6 +43,7 @@ export type RegisterInput = {
   password: string
   fullName: string
   dob: string
+  startingBalance: number
 }
 
 export async function registerUser({
@@ -49,6 +51,7 @@ export async function registerUser({
   password,
   fullName,
   dob,
+  startingBalance,
 }: RegisterInput): Promise<{ needsEmailConfirmation: boolean }> {
   if (!isAdult(dob)) {
     throw new Error("You must be at least 18 years old to register.")
@@ -59,13 +62,23 @@ export async function registerUser({
     email,
     password,
     options: {
-      data: { full_name: fullName, dob },
+      // `starting_cash_balance` rides along in user metadata so it's still
+      // available in `app/auth/confirm/route.ts` after the email-confirmation
+      // redirect, when this function's own session (if any) is long gone.
+      data: { full_name: fullName, dob, starting_cash_balance: startingBalance },
       emailRedirectTo: `${window.location.origin}/auth/confirm`,
     },
   })
 
   if (error) {
     throw new Error(error.message)
+  }
+
+  // Confirmation disabled (or already confirmed): a session exists right
+  // away, so set up the portfolio now instead of waiting for the confirm
+  // route, which will never run in this flow.
+  if (data.session) {
+    await createInitialPortfolio(startingBalance)
   }
 
   return { needsEmailConfirmation: !data.session }

@@ -10,6 +10,7 @@ export type PortfolioSummary = {
   cashBalance: number
   totalMarketValue: number
   totalReturnPercent: number
+  totalReturnDollar: number
 }
 
 export async function getPortfolioSummary(): Promise<PortfolioSummary> {
@@ -20,12 +21,20 @@ export async function getPortfolioSummary(): Promise<PortfolioSummary> {
     throw new Error(data.message ?? data.error ?? "Unable to load portfolio summary.")
   }
 
+  const totalReturnDollar =
+    data.total_return_dollar ??
+    data.total_return_amount ??
+    (data.total_market_value && data.total_return_percent !== undefined
+      ? (data.total_market_value * data.total_return_percent) / 100
+      : 0)
+
   return {
     currency: data.currency,
     currencySymbol: data.currency_symbol,
     cashBalance: data.cash_balance,
     totalMarketValue: data.total_market_value,
     totalReturnPercent: data.total_return_percent,
+    totalReturnDollar,
   }
 }
 

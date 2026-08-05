@@ -19,6 +19,7 @@ import { CapitalDialog } from "@/components/trade/capital-dialog"
 import { portfolioTotalValue } from "@/lib/mock/dashboard"
 import { getPerformanceSummary } from "@/lib/mock/performance"
 import { usePortfolioSummary } from "@/lib/portfolio"
+import { usePortfolioQuery } from "@/hooks/use-portfolio-query"
 import { useSession } from "@/lib/auth"
 
 const mockPortfolio = getPerformanceSummary("all")
@@ -38,13 +39,20 @@ export function SiteHeader() {
   const showSkeleton = isLoggedIn && isLoading
   const hasFetchFailed = isLoggedIn && !isLoading && (isError || !summary)
 
+  const { data: perfData } = usePortfolioQuery(
+    isLoggedIn,
+    (api) => api.getPerformance("all", "all")
+  )
+
   const totalAssets = summary
     ? summary.totalMarketValue
     : isLoggedIn
     ? 0
     : portfolioTotalValue
   const totalUsableCash = summary ? summary.cashBalance : 0
-  const totalReturnPercent = summary
+  const totalReturnPercent = perfData
+    ? perfData.metrics.total_return.percent
+    : summary
     ? summary.totalReturnPercent
     : isLoggedIn
     ? 0
@@ -84,7 +92,7 @@ export function SiteHeader() {
         </div>
         <div className="flex flex-col gap-1">
           <span className="text-muted-foreground text-[11px] font-medium tracking-wide uppercase">
-            Total Return
+            Total Gain/Loss
           </span>
           {showSkeleton ? (
             <Skeleton className="h-5 w-16 my-0.5" />
@@ -92,7 +100,7 @@ export function SiteHeader() {
             <span
               className={
                 "flex items-center gap-1 text-sm font-semibold tabular-nums " +
-                (isPositiveReturn ? "text-primary" : "text-destructive")
+                (isPositiveReturn ? "text-chart-3" : "text-destructive")
               }
             >
               {isPositiveReturn ? (
@@ -101,7 +109,7 @@ export function SiteHeader() {
                 <TrendingDown className="size-3.5" />
               )}
               {isPositiveReturn ? "+" : ""}
-              {totalReturnPercent.toFixed(1)}%
+              {totalReturnPercent.toFixed(2)}%
             </span>
           )}
         </div>

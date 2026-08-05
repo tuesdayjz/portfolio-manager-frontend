@@ -21,9 +21,9 @@ export const PERFORMANCE_TABS: { value: PerformanceSeriesKey; label: string }[] 
 // the logged-out preview showing a plausible series.
 const MOCK_ASSET_CLASS: Record<Exclude<PerformanceSeriesKey, "all">, AssetClass> = {
   stock: "equities",
-  bond: "fixed-income",
+  bond: "bonds",
   etf: "equities",
-  crypto: "commodities",
+  crypto: "futures",
 }
 
 export type TimeRangeKey = "1W" | "1M" | "3M" | "YTD" | "1Y" | "ALL"

@@ -29,6 +29,12 @@
   --color-destructive: var(--destructive);
   --color-info-foreground: var(--info-foreground);
   --color-info: var(--info);
+  --color-equities-foreground: var(--equities-foreground);
+  --color-equities: var(--equities);
+  --color-bonds-foreground: var(--bonds-foreground);
+  --color-bonds: var(--bonds);
+  --color-futures-foreground: var(--futures-foreground);
+  --color-futures: var(--futures);
   --color-accent-foreground: var(--accent-foreground);
   --color-accent: var(--accent);
   --color-muted-foreground: var(--muted-foreground);
@@ -66,6 +72,14 @@
   --destructive: oklch(0.577 0.245 27.325);
   --info: oklch(0.592 0.17 252.5);
   --info-foreground: oklch(0.42 0.16 255);
+  /* Asset class identifiers (Positions table) - distinct hues, kept away from
+     the green/blue/red already used for return direction and long/short. */
+  --equities: oklch(0.6 0.13 200);
+  --equities-foreground: oklch(0.42 0.12 200);
+  --bonds: oklch(0.55 0.21 293);
+  --bonds-foreground: oklch(0.4 0.19 293);
+  --futures: oklch(0.68 0.17 60);
+  --futures-foreground: oklch(0.48 0.15 55);
   --border: oklch(0.923 0.003 48.717);
   --input: oklch(0.923 0.003 48.717);
   --ring: oklch(0.709 0.01 56.259);
@@ -105,6 +119,12 @@
   --destructive: oklch(0.704 0.191 22.216);
   --info: oklch(0.72 0.16 252.5);
   --info-foreground: oklch(0.82 0.12 252.5);
+  --equities: oklch(0.75 0.13 200);
+  --equities-foreground: oklch(0.85 0.1 200);
+  --bonds: oklch(0.74 0.19 293);
+  --bonds-foreground: oklch(0.84 0.14 293);
+  --futures: oklch(0.78 0.15 60);
+  --futures-foreground: oklch(0.86 0.12 58);
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
   --ring: oklch(0.553 0.013 58.071);

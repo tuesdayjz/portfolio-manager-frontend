@@ -1,30 +1,7 @@
-import {
-  HOLDINGS,
-  OPTION_POSITIONS,
-  type AssetClass,
-} from "@/lib/mock/positions"
-import type { PerformanceAssetType } from "@/lib/portfolio-api"
+import { HOLDINGS, OPTION_POSITIONS } from "@/lib/mock/positions"
+import type { AssetClassTab } from "@/lib/asset-classes"
 
-/** Each tab maps 1:1 onto the API's `asset_type` filter. */
-export type PerformanceSeriesKey = PerformanceAssetType
-
-export const PERFORMANCE_TABS: { value: PerformanceSeriesKey; label: string }[] = [
-  { value: "all", label: "All Holdings" },
-  { value: "stock", label: "Stock" },
-  { value: "bond", label: "Bond" },
-  { value: "etf", label: "ETF" },
-  { value: "crypto", label: "Crypto" },
-]
-
-// The mock catalogue is organised by trading-desk asset class rather than by the
-// API's asset_type taxonomy, so each tab borrows the closest mock class to keep
-// the logged-out preview showing a plausible series.
-const MOCK_ASSET_CLASS: Record<Exclude<PerformanceSeriesKey, "all">, AssetClass> = {
-  stock: "equities",
-  bond: "bonds",
-  etf: "equities",
-  crypto: "futures",
-}
+export type PerformanceSeriesKey = AssetClassTab
 
 export type TimeRangeKey = "1W" | "1M" | "3M" | "YTD" | "1Y" | "ALL"
 
@@ -94,10 +71,9 @@ type AssetProfile = {
 
 const PROFILES: Record<PerformanceSeriesKey, AssetProfile> = {
   all: { drift: 0.00045, volatility: 0.009 },
-  stock: { drift: 0.0006, volatility: 0.013 },
-  bond: { drift: 0.0002, volatility: 0.004 },
-  etf: { drift: 0.00045, volatility: 0.009 },
-  crypto: { drift: 0.00035, volatility: 0.024 },
+  equities: { drift: 0.0006, volatility: 0.013 },
+  bonds: { drift: 0.0002, volatility: 0.004 },
+  futures: { drift: 0.00035, volatility: 0.014 },
 }
 
 export type PerformanceSummary = {
@@ -110,9 +86,8 @@ export type PerformanceSummary = {
 }
 
 export function getPerformanceSummary(key: PerformanceSeriesKey): PerformanceSummary {
-  const assetClass = key === "all" ? null : MOCK_ASSET_CLASS[key]
-  const holdings = HOLDINGS.filter((p) => assetClass === null || p.assetClass === assetClass)
-  const options = OPTION_POSITIONS.filter((p) => assetClass === null || p.assetClass === assetClass)
+  const holdings = HOLDINGS.filter((p) => key === "all" || p.assetClass === key)
+  const options = OPTION_POSITIONS.filter((p) => key === "all" || p.assetClass === key)
 
   const marketValue =
     holdings.reduce((sum, p) => sum + p.quantity * p.currentPrice, 0) +

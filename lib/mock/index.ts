@@ -9,7 +9,6 @@
 export * from "@/lib/mock/positions"
 export * from "@/lib/mock/transactions"
 export {
-  PERFORMANCE_TABS,
   TIME_RANGES,
   getPerformanceSlice,
   getPerformanceSummary,

@@ -38,6 +38,14 @@ export const ASSET_CLASS_LABELS: Record<AssetClass, string> = Object.fromEntries
 
 export type PositionAssetLabel = { label: string; className: string }
 
+// Singular, since this labels one position's asset class rather than a whole
+// class of positions (unlike the plural tab labels in ASSET_CLASS_LABELS).
+const ASSET_CLASS_SINGULAR_LABELS: Record<AssetClass, string> = {
+  equities: "Equity",
+  bonds: "Bond",
+  futures: "Future",
+}
+
 const ASSET_CLASS_BADGE_CLASS: Record<AssetClass, string> = {
   equities: "bg-equities/10 text-equities-foreground dark:bg-equities/20",
   bonds: "bg-bonds/10 text-bonds-foreground dark:bg-bonds/20",
@@ -47,10 +55,13 @@ const ASSET_CLASS_BADGE_CLASS: Record<AssetClass, string> = {
 /**
  * What the Positions table's "Asset Class" column shows for a row. Bond
  * futures like ZT=F already come back from the backend as asset_type "bond"
- * (see MANUAL_BOND_TICKERS in the backend), so they show as "Bonds" here too.
+ * (see MANUAL_BOND_TICKERS in the backend), so they show as "Bond" here too.
  */
 export function positionAssetLabel(assetClass: AssetClass): PositionAssetLabel {
-  return { label: ASSET_CLASS_LABELS[assetClass], className: ASSET_CLASS_BADGE_CLASS[assetClass] }
+  return {
+    label: ASSET_CLASS_SINGULAR_LABELS[assetClass],
+    className: ASSET_CLASS_BADGE_CLASS[assetClass],
+  }
 }
 
 export const HOLDINGS: HoldingPosition[] = [

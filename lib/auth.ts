@@ -1,4 +1,3 @@
-import { useEffect, useState } from "react"
 import type { User } from "@supabase/supabase-js"
 
 import { createClient } from "@/lib/supabase/client"
@@ -27,7 +26,7 @@ export function isAdult(dob: string): boolean {
   return calculateAge(dob) >= 18
 }
 
-function userFromSupabase(user: User | null): SessionUser | null {
+export function userFromSupabase(user: User | null): SessionUser | null {
   if (!user || !user.email) return null
   const meta = user.user_metadata as Record<string, string>
   return {
@@ -93,24 +92,6 @@ export async function clearSession() {
   await supabase.auth.signOut()
 }
 
-export function useSession(): SessionUser | null {
-  const [user, setUser] = useState<SessionUser | null>(null)
-
-  useEffect(() => {
-    const supabase = createClient()
-
-    supabase.auth.getUser().then(({ data }) => {
-      setUser(userFromSupabase(data.user))
-    })
-
-    const { data: listener } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        setUser(userFromSupabase(session?.user ?? null))
-      }
-    )
-
-    return () => listener.subscription.unsubscribe()
-  }, [])
-
-  return user
-}
+// Re-export AuthProvider & session hooks for convenient imports
+export { AuthProvider } from "@/components/providers/auth-provider"
+export { useSession, useSessionState } from "@/hooks/use-session"

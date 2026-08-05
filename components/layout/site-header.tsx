@@ -1,15 +1,24 @@
+
 "use client"
 
 import Link from "next/link"
-import { ArrowRightLeft, TrendingDown, TrendingUp } from "lucide-react"
+import { AlertCircle, ArrowRightLeft, RefreshCw, TrendingDown, TrendingUp } from "lucide-react"
 
 import { buttonVariants } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { SidebarTrigger } from "@/components/ui/sidebar"
+import { Skeleton } from "@/components/ui/skeleton"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 import { ThemeToggle } from "@/components/layout/theme-toggle"
 import { portfolioTotalValue } from "@/lib/mock/dashboard"
 import { getPerformanceSummary } from "@/lib/mock/performance"
 import { usePortfolioSummary } from "@/lib/portfolio"
+import { useSession } from "@/lib/auth"
 
 const mockPortfolio = getPerformanceSummary("all")
 
@@ -21,12 +30,23 @@ const currencyFormatter = new Intl.NumberFormat("en-US", {
 })
 
 export function SiteHeader() {
-  const { summary } = usePortfolioSummary()
+  const user = useSession()
+  const { summary, isLoading, isError, refresh } = usePortfolioSummary()
 
-  const totalAssets = summary ? summary.totalMarketValue : portfolioTotalValue
+  const isLoggedIn = !!user
+  const showSkeleton = isLoggedIn && isLoading
+  const hasFetchFailed = isLoggedIn && !isLoading && (isError || !summary)
+
+  const totalAssets = summary
+    ? summary.totalMarketValue
+    : isLoggedIn
+    ? 0
+    : portfolioTotalValue
   const totalUsableCash = summary ? summary.cashBalance : 0
   const totalReturnPercent = summary
     ? summary.totalReturnPercent
+    : isLoggedIn
+    ? 0
     : mockPortfolio.totalReturnPercent
   const isPositiveReturn = totalReturnPercent >= 0
 
@@ -37,41 +57,72 @@ export function SiteHeader() {
       <Separator orientation="vertical" className="hidden h-6 md:block" />
 
       <div className="hidden items-center gap-6 md:flex">
-        <div className="flex flex-col">
+        <div className="flex flex-col gap-1">
           <span className="text-muted-foreground text-[11px] font-medium tracking-wide uppercase">
             Total Assets
           </span>
-          <span className="text-sm font-semibold tabular-nums">
-            {currencyFormatter.format(totalAssets)}
-          </span>
+          {showSkeleton ? (
+            <Skeleton className="h-5 w-24 my-0.5" />
+          ) : (
+            <span className="text-sm font-semibold tabular-nums">
+              {currencyFormatter.format(totalAssets)}
+            </span>
+          )}
         </div>
-        <div className="flex flex-col">
+        <div className="flex flex-col gap-1">
           <span className="text-muted-foreground text-[11px] font-medium tracking-wide uppercase">
             Total Usable Cash
           </span>
-          <span className="text-sm font-semibold tabular-nums">
-            {currencyFormatter.format(totalUsableCash)}
-          </span>
+          {showSkeleton ? (
+            <Skeleton className="h-5 w-20 my-0.5" />
+          ) : (
+            <span className="text-sm font-semibold tabular-nums">
+              {currencyFormatter.format(totalUsableCash)}
+            </span>
+          )}
         </div>
-        <div className="flex flex-col">
+        <div className="flex flex-col gap-1">
           <span className="text-muted-foreground text-[11px] font-medium tracking-wide uppercase">
             Total Return
           </span>
-          <span
-            className={
-              "flex items-center gap-1 text-sm font-semibold tabular-nums " +
-              (isPositiveReturn ? "text-primary" : "text-destructive")
-            }
-          >
-            {isPositiveReturn ? (
-              <TrendingUp className="size-3.5" />
-            ) : (
-              <TrendingDown className="size-3.5" />
-            )}
-            {isPositiveReturn ? "+" : ""}
-            {totalReturnPercent.toFixed(1)}%
-          </span>
+          {showSkeleton ? (
+            <Skeleton className="h-5 w-16 my-0.5" />
+          ) : (
+            <span
+              className={
+                "flex items-center gap-1 text-sm font-semibold tabular-nums " +
+                (isPositiveReturn ? "text-primary" : "text-destructive")
+              }
+            >
+              {isPositiveReturn ? (
+                <TrendingUp className="size-3.5" />
+              ) : (
+                <TrendingDown className="size-3.5" />
+              )}
+              {isPositiveReturn ? "+" : ""}
+              {totalReturnPercent.toFixed(1)}%
+            </span>
+          )}
         </div>
+
+        {hasFetchFailed && (
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger
+                onClick={refresh}
+                className="text-amber-500 hover:text-amber-600 dark:text-amber-400 dark:hover:text-amber-300 flex items-center gap-1.5 text-xs font-medium cursor-pointer transition-colors rounded-md bg-amber-500/10 px-2 py-1"
+                aria-label="Failed to retrieve live portfolio data. Click to retry."
+              >
+                <AlertCircle className="size-3.5" />
+                <span>Fetch failed</span>
+                <RefreshCw className="size-3" />
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Failed to retrieve portfolio data. Showing default $0.00 / 0.0%. Click to retry.</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        )}
       </div>
 
       <div className="ml-auto flex items-center gap-2">

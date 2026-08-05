@@ -2,7 +2,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useState } from "react"
 
-import { useSession } from "@/lib/auth"
+import { useSessionState } from "@/hooks/use-session"
 
 export type PortfolioSummary = {
   currency: string
@@ -31,11 +31,15 @@ export async function getPortfolioSummary(): Promise<PortfolioSummary> {
 
 type PortfolioSummaryContextValue = {
   summary: PortfolioSummary | null
+  isLoading: boolean
+  isError: boolean
   refresh: () => void
 }
 
 const PortfolioSummaryContext = createContext<PortfolioSummaryContextValue>({
   summary: null,
+  isLoading: false,
+  isError: false,
   refresh: () => {},
 })
 
@@ -43,33 +47,54 @@ const PortfolioSummaryContext = createContext<PortfolioSummaryContextValue>({
 // callers (e.g. the trade ticket, after a successful order) can force a
 // refetch instead of waiting for the next full page load.
 export function PortfolioSummaryProvider({ children }: { children: React.ReactNode }) {
-  const user = useSession()
+  const { user, isLoading: isAuthLoading } = useSessionState()
   const [summary, setSummary] = useState<PortfolioSummary | null>(null)
+  const [isSummaryLoading, setIsSummaryLoading] = useState<boolean>(true)
+  const [isError, setIsError] = useState<boolean>(false)
   const [version, setVersion] = useState(0)
 
   useEffect(() => {
     let cancelled = false
 
-    if (!user) {
+    if (isAuthLoading) {
       return
     }
 
+    if (!user) {
+      setIsSummaryLoading(false)
+      setSummary(null)
+      setIsError(false)
+      return
+    }
+
+    setIsSummaryLoading(true)
+    setIsError(false)
     getPortfolioSummary()
       .then((result) => {
-        if (!cancelled) setSummary(result)
+        if (!cancelled) {
+          setSummary(result)
+          setIsSummaryLoading(false)
+          setIsError(false)
+        }
       })
       .catch(() => {
-        if (!cancelled) setSummary(null)
+        if (!cancelled) {
+          setSummary(null)
+          setIsSummaryLoading(false)
+          setIsError(true)
+        }
       })
     return () => {
       cancelled = true
     }
-  }, [user, version])
+  }, [user, isAuthLoading, version])
 
   const refresh = useCallback(() => setVersion((v) => v + 1), [])
 
+  const isLoading = isAuthLoading || (!!user && isSummaryLoading)
+
   return (
-    <PortfolioSummaryContext.Provider value={{ summary, refresh }}>
+    <PortfolioSummaryContext.Provider value={{ summary, isLoading, isError, refresh }}>
       {children}
     </PortfolioSummaryContext.Provider>
   )

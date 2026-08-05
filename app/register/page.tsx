@@ -5,7 +5,7 @@ import Image from "next/image"
 import Link from "next/link"
 import { Mail } from "lucide-react"
 
-import { isAdult, registerUser, useSession } from "@/lib/auth"
+import { AuthProvider, isAdult, registerUser, useSession } from "@/lib/auth"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 
-export default function RegisterPage() {
+function RegisterPageContent() {
   const session = useSession()
   const [email, setEmail] = useState("")
   const [fullName, setFullName] = useState("")
@@ -161,5 +161,13 @@ export default function RegisterPage() {
         </CardContent>
       </Card>
     </div>
+  )
+}
+
+export default function RegisterPage() {
+  return (
+    <AuthProvider>
+      <RegisterPageContent />
+    </AuthProvider>
   )
 }

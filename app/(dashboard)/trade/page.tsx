@@ -29,6 +29,15 @@ import { LoginPromptOverlay } from "@/components/layout/login-prompt-overlay"
 
 type TradeTab = "equity" | "options"
 
+// Options only make sense on equity-style underlyings in this app - bonds and
+// futures/commodities don't get an options ticket. Yahoo's `quoteType` on the
+// search result tells us this before the asset is ever registered on the backend.
+function optionsSupportedForType(type: string | null): boolean {
+  if (!type) return true
+  const upper = type.toUpperCase()
+  return upper !== "BOND" && upper !== "FUTURE"
+}
+
 function OrderHistory({ orders }: { orders: TradeOrder[] }) {
   if (orders.length === 0) return null
 
@@ -81,9 +90,12 @@ export default function TradePage() {
   const { refresh: refreshPortfolioSummary } = usePortfolioSummary()
 
   const [symbol, setSymbol] = useState<string | null>(null)
+  const [symbolType, setSymbolType] = useState<string | null>(null)
   const [quote, setQuote] = useState<SecurityQuote | null>(null)
   const [quoteLoading, setQuoteLoading] = useState(false)
   const [quoteError, setQuoteError] = useState<string | null>(null)
+
+  const optionsSupported = optionsSupportedForType(symbolType)
 
   async function loadQuote(sym: string) {
     setQuoteLoading(true)
@@ -101,6 +113,8 @@ export default function TradePage() {
 
   function handleSelect(result: SecuritySearchResult) {
     setSymbol(result.symbol)
+    setSymbolType(result.type)
+    if (!optionsSupportedForType(result.type)) setTab("equity")
     void loadQuote(result.symbol)
   }
 
@@ -145,15 +159,20 @@ export default function TradePage() {
                   <TabsList>
                     <TabsIndicator />
                     <TabsTab value="equity">Buy/Sell</TabsTab>
-                    <TabsTab value="options">Options</TabsTab>
+                    {optionsSupported && <TabsTab value="options">Options</TabsTab>}
                   </TabsList>
                 </Tabs>
+                {!optionsSupported && (
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    Options aren&apos;t available for bonds or futures.
+                  </p>
+                )}
               </CardHeader>
               <CardContent>
-                {tab === "equity" ? (
-                  <EquityOrderForm key={symbol} quote={quote} onSubmit={handleOrder} />
-                ) : (
+                {tab === "options" && optionsSupported ? (
                   <OptionOrderForm key={symbol} symbol={symbol} quote={quote} onSubmit={handleOrder} />
+                ) : (
+                  <EquityOrderForm key={symbol} quote={quote} onSubmit={handleOrder} />
                 )}
               </CardContent>
             </Card>

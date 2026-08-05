@@ -29,8 +29,8 @@ import { useSession } from "@/lib/auth"
 import { usePortfolioQuery } from "@/hooks/use-portfolio-query"
 import { deltaBadgeClass, tradeBadgeClass } from "@/lib/trade-status"
 import { LoginPromptOverlay } from "@/components/layout/login-prompt-overlay"
+import { ASSET_CLASS_TABS, type AssetClassTab } from "@/lib/asset-classes"
 import {
-  ASSET_CLASSES,
   HOLDINGS,
   OPTION_POSITIONS,
   positionAssetLabel,
@@ -459,7 +459,7 @@ function AssetClassPanel({
   holdings,
   optionPositions,
 }: {
-  assetClass: "all" | AssetClass
+  assetClass: AssetClassTab
   holdings: HoldingPosition[]
   optionPositions: OptionPosition[]
 }) {
@@ -479,7 +479,7 @@ function AssetClassPanel({
 }
 
 export default function PositionsPage() {
-  const [assetClass, setAssetClass] = useState<"all" | AssetClass>("all")
+  const [assetClass, setAssetClass] = useState<AssetClassTab>("all")
   const [query, setQuery] = useState("")
   const user = useSession()
   const isLoggedIn = !!user
@@ -559,15 +559,12 @@ export default function PositionsPage() {
 
         <Tabs
           value={assetClass}
-          onValueChange={(value) => setAssetClass(value as "all" | AssetClass)}
+          onValueChange={(value) => setAssetClass(value as AssetClassTab)}
           className="flex flex-col gap-6"
         >
           <TabsList>
             <TabsIndicator />
-            <TabsTab key="all" value="all">
-              All Positions
-            </TabsTab>
-            {ASSET_CLASSES.map((option) => (
+            {ASSET_CLASS_TABS.map((option) => (
               <TabsTab key={option.value} value={option.value}>
                 {option.label}
               </TabsTab>

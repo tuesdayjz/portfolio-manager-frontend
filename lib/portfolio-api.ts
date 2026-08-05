@@ -62,10 +62,13 @@ export type PerformanceResponse = {
 export type PerformanceRange = "1d" | "1w" | "1m" | "3m" | "YTD" | "1y" | "all"
 
 /**
- * The `asset_type` filter accepted by the portfolio endpoints. `"all"` is the
- * API's own value for "no filter", so it is sent as-is rather than omitted.
+ * The `asset_type` values the asset-class tabs filter by. `"all"` is the API's
+ * own value for "no filter", so it is sent as-is rather than omitted.
+ *
+ * Note this is narrower than the vocabulary the API can return: the backend also
+ * emits `etf`, `fund`, `crypto` and `cash`, none of which have a tab of their own.
  */
-export type PerformanceAssetType = "all" | "stock" | "bond" | "etf" | "crypto"
+export type PortfolioAssetType = "all" | "stock" | "bond" | "futures"
 
 type Fetcher = typeof fetch
 
@@ -121,7 +124,7 @@ export function createPortfolioApi(accessToken: string, fetcher: Fetcher = fetch
         search: params?.search,
         transaction_type: params?.transactionType,
       }),
-    getPerformance: (range: PerformanceRange, assetType: PerformanceAssetType = "all") =>
+    getPerformance: (range: PerformanceRange, assetType: PortfolioAssetType = "all") =>
       get<PerformanceResponse>("/api/v1/portfolios/performance", {
         range,
         interval: "1d",

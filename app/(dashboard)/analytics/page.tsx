@@ -25,9 +25,9 @@ import { cn } from "@/lib/utils"
 import { useSession } from "@/lib/auth"
 import { usePortfolioQuery } from "@/hooks/use-portfolio-query"
 import type { PerformanceRange } from "@/lib/portfolio-api"
+import { ASSET_CLASS_TABS, apiAssetType } from "@/lib/asset-classes"
 import { LoginPromptOverlay } from "@/components/layout/login-prompt-overlay"
 import {
-  PERFORMANCE_TABS,
   TIME_RANGES,
   getPerformanceSlice,
   getPerformanceSummary,
@@ -276,12 +276,9 @@ function PerformanceChart({
 function PerformancePanel({ seriesKey }: { seriesKey: PerformanceSeriesKey }) {
   const [range, setRange] = useState<TimeRangeKey>("3M")
   const user = useSession()
-  const apiRange: Record<TimeRangeKey, PerformanceRange> = {
-    "1W": "1w", "1M": "1m", "3M": "3m", YTD: "YTD", "1Y": "1y", ALL: "all",
-  }
   const { data, isLoading, error } = usePortfolioQuery(
     !!user,
-    (api) => api.getPerformance(API_RANGE[range], seriesKey),
+    (api) => api.getPerformance(API_RANGE[range], apiAssetType(seriesKey)),
     [range, seriesKey]
   )
 
@@ -395,7 +392,7 @@ export default function AnalyticsPage() {
             </div>
             <TabsList>
               <TabsIndicator />
-              {PERFORMANCE_TABS.map((option) => (
+              {ASSET_CLASS_TABS.map((option) => (
                 <TabsTab key={option.value} value={option.value}>
                   {option.label}
                 </TabsTab>

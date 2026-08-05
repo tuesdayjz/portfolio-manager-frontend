@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/tooltip"
 import { ThemeToggle } from "@/components/layout/theme-toggle"
 import { CapitalDialog } from "@/components/trade/capital-dialog"
-import { portfolioTotalValue } from "@/lib/mock/dashboard"
+import { portfolioTotalShortLiability, portfolioTotalValue } from "@/lib/mock/dashboard"
 import { getPerformanceSummary } from "@/lib/mock/performance"
 import { usePortfolioSummary } from "@/lib/portfolio"
 import { usePortfolioQuery } from "@/hooks/use-portfolio-query"
@@ -50,6 +50,11 @@ export function SiteHeader() {
     ? 0
     : portfolioTotalValue
   const totalUsableCash = summary ? summary.cashBalance : 0
+  const totalLiabilities = summary
+    ? summary.totalShortLiability
+    : isLoggedIn
+    ? 0
+    : portfolioTotalShortLiability
   const totalReturnPercent = perfData
     ? perfData.metrics.total_return.percent
     : summary
@@ -87,6 +92,18 @@ export function SiteHeader() {
           ) : (
             <span className="text-sm font-semibold tabular-nums">
               {currencyFormatter.format(totalUsableCash)}
+            </span>
+          )}
+        </div>
+        <div className="flex flex-col gap-1">
+          <span className="text-muted-foreground text-[11px] font-medium tracking-wide uppercase">
+            Total Liabilities
+          </span>
+          {showSkeleton ? (
+            <Skeleton className="h-5 w-20 my-0.5" />
+          ) : (
+            <span className="text-sm font-semibold tabular-nums text-destructive">
+              {currencyFormatter.format(totalLiabilities)}
             </span>
           )}
         </div>

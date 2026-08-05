@@ -47,7 +47,9 @@ export function TopPositionsCard() {
             marketValue: holding.total_market_value,
             changePct: holding.today_return_percent,
           }))
-          .sort((a, b) => b.marketValue - a.marketValue)
+          // Rank by position size, not signed value - a large short (negative
+          // market value, since it's a liability) is still a "top" position.
+          .sort((a, b) => Math.abs(b.marketValue) - Math.abs(a.marketValue))
           .slice(0, 5)
       : isLoggedIn ? [] : topPositions
   }, [data, isLoggedIn])

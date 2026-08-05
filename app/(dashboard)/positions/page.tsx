@@ -27,7 +27,7 @@ import { cn } from "@/lib/utils"
 import { matchesQuery } from "@/lib/search"
 import { useSession } from "@/lib/auth"
 import { usePortfolioQuery } from "@/hooks/use-portfolio-query"
-import { deltaBadgeClass, tradeBadgeClass } from "@/lib/trade-status"
+import { tradeBadgeClass } from "@/lib/trade-status"
 import { LoginPromptOverlay } from "@/components/layout/login-prompt-overlay"
 import { ASSET_CLASS_TABS, type AssetClassTab } from "@/lib/asset-classes"
 import {
@@ -46,6 +46,17 @@ function formatCurrency(value: number) {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   })
+}
+
+// A short position is a liability, so its market value is shown in
+// parentheses (accounting convention) instead of with a leading minus sign.
+function formatMarketValue(value: number) {
+  return value < 0 ? `(${formatCurrency(Math.abs(value))})` : formatCurrency(value)
+}
+
+function signedMarketValue(position: HoldingPosition) {
+  const notional = position.quantity * position.currentPrice
+  return position.side === "short" ? -notional : notional
 }
 
 function formatPrice(value: number) {
@@ -197,16 +208,19 @@ const TABLE_MIN_WIDTH = Object.values(COLUMN_WIDTH).reduce((a, b) => a + b, 0)
 function HoldingsTable({ positions }: { positions: HoldingPosition[] }) {
   const [sort, setSort] = useState<SortState>(null)
 
-  const marketValue = positions.reduce(
+  // Shorts are a liability, not an asset: they're listed individually below
+  // but excluded from the aggregate market value and return, same as the
+  // portfolio-level totals.
+  const longPositions = positions.filter((p) => p.side !== "short")
+  const marketValue = longPositions.reduce(
     (sum, p) => sum + p.quantity * p.currentPrice,
     0
   )
-  const costBasis = positions.reduce((sum, p) => sum + p.quantity * p.avgPrice, 0)
-  const totalReturnDollar = positions.reduce((sum, p) => {
-    const gainPerUnit =
-      p.side === "short" ? p.avgPrice - p.currentPrice : p.currentPrice - p.avgPrice
-    return sum + gainPerUnit * p.quantity
-  }, 0)
+  const costBasis = longPositions.reduce((sum, p) => sum + p.quantity * p.avgPrice, 0)
+  const totalReturnDollar = longPositions.reduce(
+    (sum, p) => sum + (p.currentPrice - p.avgPrice) * p.quantity,
+    0
+  )
   const totalReturnPercent = costBasis !== 0 ? (totalReturnDollar / costBasis) * 100 : 0
 
   const sortedPositions = useMemo(() => {
@@ -219,8 +233,8 @@ function HoldingsTable({ positions }: { positions: HoldingPosition[] }) {
       const bGain =
         (b.side === "short" ? b.avgPrice - b.currentPrice : b.currentPrice - b.avgPrice) *
         b.quantity
-      const aValue = sort.key === "today" ? aGain : a.quantity * a.currentPrice
-      const bValue = sort.key === "today" ? bGain : b.quantity * b.currentPrice
+      const aValue = sort.key === "today" ? aGain : signedMarketValue(a)
+      const bValue = sort.key === "today" ? bGain : signedMarketValue(b)
       return (aValue - bValue) * factor
     })
   }, [positions, sort])
@@ -309,7 +323,7 @@ function HoldingsTable({ positions }: { positions: HoldingPosition[] }) {
                         <GainLoss dollar={gainDollar} percent={gainPercent} />
                       </td>
                       <td className="py-1.5 pr-0 text-right">
-                        {formatCurrency(position.quantity * position.currentPrice)}
+                        {formatMarketValue(signedMarketValue(position))}
                       </td>
                     </tr>
                   )
@@ -492,8 +506,8 @@ export default function PositionsPage() {
           symbol: holding.ticker,
           name: holding.name,
           assetClass: assetClassFromApi(holding.asset_type),
-          side: "long" as const,
-          quantity: holding.quantity,
+          side: holding.quantity < 0 ? ("short" as const) : ("long" as const),
+          quantity: Math.abs(holding.quantity),
           avgPrice: holding.average_purchase_price,
           currentPrice: holding.current_price,
           dayChangePercent: holding.today_return_percent,

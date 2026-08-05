@@ -1,9 +1,10 @@
-import type { TradeAction } from "@/lib/trade-orders"
+import type { TradeAction, TradePosition } from "@/lib/trade-orders"
 
 export type TransactionRequest = {
   ticker: string
   name: string
   transactionType: TradeAction
+  position: TradePosition
   quantity: number
   // Present only for a backdated ("Insert Past Trade") order — the trade date
   // (yyyy-mm-dd) and the historical price the user entered for that date.
@@ -29,7 +30,7 @@ export async function createTransaction(
     body: JSON.stringify({
       ticker: order.ticker,
       name: order.name,
-      position: "long",
+      position: order.position,
       order_type: "market",
       transaction_type: order.transactionType,
       quantity: order.quantity,

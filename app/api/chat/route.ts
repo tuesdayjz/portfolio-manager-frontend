@@ -3,10 +3,10 @@ import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 
 // Gemini API free-tier docs: https://ai.google.dev/gemini-api/docs/rate-limits
-// `gemini-2.5-flash-lite` currently has the most generous free-tier request
+// `gemini-3.5-flash-lite` currently has the most generous free-tier request
 // quota of the stable models, which fits a chatty little mascot widget well.
 // Override with GEMINI_MODEL if a different free/paid model is preferred.
-const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash-lite"
+const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-3.5-flash-lite"
 const GEMINI_API_BASE = "https://generativelanguage.googleapis.com/v1beta"
 
 type ChatRole = "user" | "assistant"
@@ -16,12 +16,29 @@ type ChatMessage = {
   content: string
 }
 
+type PositionContext = {
+  ticker: string
+  name?: string
+  assetType?: string
+  quantity?: number
+  marketValue?: number
+  totalReturnPercent?: number
+}
+
+type AllocationContext = {
+  category: string
+  weight: number
+  value?: number
+}
+
 type PortfolioContext = {
   currency?: string
   currencySymbol?: string
   cashBalance?: number
   totalMarketValue?: number
   totalReturnPercent?: number
+  positions?: PositionContext[]
+  allocation?: AllocationContext[]
 }
 
 // Keep the free-tier TPM (tokens-per-minute) budget in check: cap both how
@@ -69,9 +86,35 @@ function buildSystemInstruction(
     }
     if (parts.length > 0) {
       lines.push(
-        `Current portfolio snapshot (${portfolio.currency ?? "unknown currency"}): ${parts.join(", ")}. You may reference this naturally, but only when relevant.`
+        `Current portfolio snapshot (${portfolio.currency ?? "unknown currency"}): ${parts.join(", ")}.`
       )
     }
+
+    if (Array.isArray(portfolio.allocation) && portfolio.allocation.length > 0) {
+      const allocItems = portfolio.allocation
+        .map((a) => `${a.category}: ${a.weight.toFixed(1)}%`)
+        .join(", ")
+      lines.push(`Asset allocation breakdown: ${allocItems}.`)
+    }
+
+    if (Array.isArray(portfolio.positions) && portfolio.positions.length > 0) {
+      const posItems = portfolio.positions
+        .slice(0, 15)
+        .map((p) => {
+          let label = p.ticker
+          if (p.name && p.name !== p.ticker) label += ` (${p.name})`
+          if (typeof p.marketValue === "number") label += `: ${symbol}${p.marketValue.toLocaleString()}`
+          if (typeof p.totalReturnPercent === "number") {
+            const sign = p.totalReturnPercent >= 0 ? "+" : ""
+            label += ` (${sign}${p.totalReturnPercent.toFixed(1)}%)`
+          }
+          return label
+        })
+        .join("; ")
+      lines.push(`Top holding positions: ${posItems}.`)
+    }
+
+    lines.push("You may reference these portfolio details naturally, but only when relevant.")
   }
 
   lines.push(

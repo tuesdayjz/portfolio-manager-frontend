@@ -6,6 +6,7 @@ import { Loader2, SendHorizonal } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useSession } from "@/lib/auth"
 import { usePortfolioSummary } from "@/lib/portfolio"
+import { usePortfolioQuery } from "@/hooks/use-portfolio-query"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { PetSprite, petMoodFromReturn, type PetMood } from "@/components/layout/pet-sprite"
@@ -32,8 +33,19 @@ function createId() {
 
 export function PetChatWidget() {
   const user = useSession()
+  const isLoggedIn = !!user
   const { summary } = usePortfolioSummary()
   const [showDaoDun] = useShowDaoDun()
+
+  const { data: holdingsData } = usePortfolioQuery(
+    isLoggedIn,
+    (api) => api.getHoldings({ perPage: 20 })
+  )
+  const { data: allocationData } = usePortfolioQuery(
+    isLoggedIn,
+    (api) => api.getAllocation()
+  )
+
   const [open, setOpen] = useState(false)
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [input, setInput] = useState("")
@@ -77,13 +89,36 @@ export function PetChatWidget() {
     setMessages([...history, { id: assistantId, role: "assistant", content: "" }])
     setIsSending(true)
 
+    const positions = holdingsData?.items?.map((item) => ({
+      ticker: item.ticker,
+      name: item.name,
+      assetType: item.asset_type,
+      quantity: item.quantity,
+      marketValue: item.total_market_value,
+      totalReturnPercent: item.total_return_percent,
+    }))
+
+    const allocation = allocationData?.items?.map((item) => ({
+      category: item.category,
+      weight: item.weight <= 1 ? item.weight * 100 : item.weight,
+      value: item.value,
+    }))
+
+    const portfolioPayload = summary
+      ? {
+          ...summary,
+          positions: positions && positions.length > 0 ? positions : undefined,
+          allocation: allocation && allocation.length > 0 ? allocation : undefined,
+        }
+      : null
+
     try {
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           messages: history.map(({ role, content }) => ({ role, content })),
-          portfolio: summary,
+          portfolio: portfolioPayload,
           mood,
         }),
       })

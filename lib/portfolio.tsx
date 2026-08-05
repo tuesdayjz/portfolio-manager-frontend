@@ -32,12 +32,14 @@ export async function getPortfolioSummary(): Promise<PortfolioSummary> {
 type PortfolioSummaryContextValue = {
   summary: PortfolioSummary | null
   isLoading: boolean
+  isError: boolean
   refresh: () => void
 }
 
 const PortfolioSummaryContext = createContext<PortfolioSummaryContextValue>({
   summary: null,
   isLoading: false,
+  isError: false,
   refresh: () => {},
 })
 
@@ -48,6 +50,7 @@ export function PortfolioSummaryProvider({ children }: { children: React.ReactNo
   const { user, isLoading: isAuthLoading } = useSessionState()
   const [summary, setSummary] = useState<PortfolioSummary | null>(null)
   const [isSummaryLoading, setIsSummaryLoading] = useState<boolean>(true)
+  const [isError, setIsError] = useState<boolean>(false)
   const [version, setVersion] = useState(0)
 
   useEffect(() => {
@@ -60,21 +63,25 @@ export function PortfolioSummaryProvider({ children }: { children: React.ReactNo
     if (!user) {
       setIsSummaryLoading(false)
       setSummary(null)
+      setIsError(false)
       return
     }
 
     setIsSummaryLoading(true)
+    setIsError(false)
     getPortfolioSummary()
       .then((result) => {
         if (!cancelled) {
           setSummary(result)
           setIsSummaryLoading(false)
+          setIsError(false)
         }
       })
       .catch(() => {
         if (!cancelled) {
           setSummary(null)
           setIsSummaryLoading(false)
+          setIsError(true)
         }
       })
     return () => {
@@ -87,7 +94,7 @@ export function PortfolioSummaryProvider({ children }: { children: React.ReactNo
   const isLoading = isAuthLoading || (!!user && isSummaryLoading)
 
   return (
-    <PortfolioSummaryContext.Provider value={{ summary, isLoading, refresh }}>
+    <PortfolioSummaryContext.Provider value={{ summary, isLoading, isError, refresh }}>
       {children}
     </PortfolioSummaryContext.Provider>
   )

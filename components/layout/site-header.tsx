@@ -1,12 +1,19 @@
+
 "use client"
 
 import Link from "next/link"
-import { ArrowRightLeft, TrendingDown, TrendingUp } from "lucide-react"
+import { AlertCircle, ArrowRightLeft, RefreshCw, TrendingDown, TrendingUp } from "lucide-react"
 
 import { buttonVariants } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { SidebarTrigger } from "@/components/ui/sidebar"
 import { Skeleton } from "@/components/ui/skeleton"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 import { ThemeToggle } from "@/components/layout/theme-toggle"
 import { portfolioTotalValue } from "@/lib/mock/dashboard"
 import { getPerformanceSummary } from "@/lib/mock/performance"
@@ -24,15 +31,22 @@ const currencyFormatter = new Intl.NumberFormat("en-US", {
 
 export function SiteHeader() {
   const user = useSession()
-  const { summary, isLoading } = usePortfolioSummary()
+  const { summary, isLoading, isError, refresh } = usePortfolioSummary()
 
   const isLoggedIn = !!user
-  const showSkeleton = isLoggedIn && (isLoading || !summary)
+  const showSkeleton = isLoggedIn && isLoading
+  const hasFetchFailed = isLoggedIn && !isLoading && (isError || !summary)
 
-  const totalAssets = summary ? summary.totalMarketValue : portfolioTotalValue
+  const totalAssets = summary
+    ? summary.totalMarketValue
+    : isLoggedIn
+    ? 0
+    : portfolioTotalValue
   const totalUsableCash = summary ? summary.cashBalance : 0
   const totalReturnPercent = summary
     ? summary.totalReturnPercent
+    : isLoggedIn
+    ? 0
     : mockPortfolio.totalReturnPercent
   const isPositiveReturn = totalReturnPercent >= 0
 
@@ -90,6 +104,25 @@ export function SiteHeader() {
             </span>
           )}
         </div>
+
+        {hasFetchFailed && (
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger
+                onClick={refresh}
+                className="text-amber-500 hover:text-amber-600 dark:text-amber-400 dark:hover:text-amber-300 flex items-center gap-1.5 text-xs font-medium cursor-pointer transition-colors rounded-md bg-amber-500/10 px-2 py-1"
+                aria-label="Failed to retrieve live portfolio data. Click to retry."
+              >
+                <AlertCircle className="size-3.5" />
+                <span>Fetch failed</span>
+                <RefreshCw className="size-3" />
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Failed to retrieve portfolio data. Showing default $0.00 / 0.0%. Click to retry.</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        )}
       </div>
 
       <div className="ml-auto flex items-center gap-2">

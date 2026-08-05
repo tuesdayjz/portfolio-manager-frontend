@@ -6,10 +6,12 @@ import { ArrowRightLeft, TrendingDown, TrendingUp } from "lucide-react"
 import { buttonVariants } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { SidebarTrigger } from "@/components/ui/sidebar"
+import { Skeleton } from "@/components/ui/skeleton"
 import { ThemeToggle } from "@/components/layout/theme-toggle"
 import { portfolioTotalValue } from "@/lib/mock/dashboard"
 import { getPerformanceSummary } from "@/lib/mock/performance"
 import { usePortfolioSummary } from "@/lib/portfolio"
+import { useSession } from "@/lib/auth"
 
 const mockPortfolio = getPerformanceSummary("all")
 
@@ -21,7 +23,11 @@ const currencyFormatter = new Intl.NumberFormat("en-US", {
 })
 
 export function SiteHeader() {
-  const { summary } = usePortfolioSummary()
+  const user = useSession()
+  const { summary, isLoading } = usePortfolioSummary()
+
+  const isLoggedIn = !!user
+  const showSkeleton = isLoggedIn && (isLoading || !summary)
 
   const totalAssets = summary ? summary.totalMarketValue : portfolioTotalValue
   const totalUsableCash = summary ? summary.cashBalance : 0
@@ -37,40 +43,52 @@ export function SiteHeader() {
       <Separator orientation="vertical" className="hidden h-6 md:block" />
 
       <div className="hidden items-center gap-6 md:flex">
-        <div className="flex flex-col">
+        <div className="flex flex-col gap-1">
           <span className="text-muted-foreground text-[11px] font-medium tracking-wide uppercase">
             Total Assets
           </span>
-          <span className="text-sm font-semibold tabular-nums">
-            {currencyFormatter.format(totalAssets)}
-          </span>
+          {showSkeleton ? (
+            <Skeleton className="h-5 w-24 my-0.5" />
+          ) : (
+            <span className="text-sm font-semibold tabular-nums">
+              {currencyFormatter.format(totalAssets)}
+            </span>
+          )}
         </div>
-        <div className="flex flex-col">
+        <div className="flex flex-col gap-1">
           <span className="text-muted-foreground text-[11px] font-medium tracking-wide uppercase">
             Total Usable Cash
           </span>
-          <span className="text-sm font-semibold tabular-nums">
-            {currencyFormatter.format(totalUsableCash)}
-          </span>
+          {showSkeleton ? (
+            <Skeleton className="h-5 w-20 my-0.5" />
+          ) : (
+            <span className="text-sm font-semibold tabular-nums">
+              {currencyFormatter.format(totalUsableCash)}
+            </span>
+          )}
         </div>
-        <div className="flex flex-col">
+        <div className="flex flex-col gap-1">
           <span className="text-muted-foreground text-[11px] font-medium tracking-wide uppercase">
             Total Return
           </span>
-          <span
-            className={
-              "flex items-center gap-1 text-sm font-semibold tabular-nums " +
-              (isPositiveReturn ? "text-primary" : "text-destructive")
-            }
-          >
-            {isPositiveReturn ? (
-              <TrendingUp className="size-3.5" />
-            ) : (
-              <TrendingDown className="size-3.5" />
-            )}
-            {isPositiveReturn ? "+" : ""}
-            {totalReturnPercent.toFixed(1)}%
-          </span>
+          {showSkeleton ? (
+            <Skeleton className="h-5 w-16 my-0.5" />
+          ) : (
+            <span
+              className={
+                "flex items-center gap-1 text-sm font-semibold tabular-nums " +
+                (isPositiveReturn ? "text-primary" : "text-destructive")
+              }
+            >
+              {isPositiveReturn ? (
+                <TrendingUp className="size-3.5" />
+              ) : (
+                <TrendingDown className="size-3.5" />
+              )}
+              {isPositiveReturn ? "+" : ""}
+              {totalReturnPercent.toFixed(1)}%
+            </span>
+          )}
         </div>
       </div>
 

@@ -1,4 +1,4 @@
-export type AssetClass = "equities" | "fx" | "bonds" | "commodities"
+export type AssetClass = "equities" | "bonds" | "futures"
 
 export type HoldingSide = "long" | "short"
 
@@ -28,10 +28,30 @@ export type OptionPosition = {
 
 export const ASSET_CLASSES: { value: AssetClass; label: string }[] = [
   { value: "equities", label: "Equities" },
-  { value: "fx", label: "Forex" },
   { value: "bonds", label: "Bonds" },
-  { value: "commodities", label: "Commodities" },
+  { value: "futures", label: "Futures" },
 ]
+
+export const ASSET_CLASS_LABELS: Record<AssetClass, string> = Object.fromEntries(
+  ASSET_CLASSES.map(({ value, label }) => [value, label])
+) as Record<AssetClass, string>
+
+export type PositionAssetLabel = { label: string; className: string }
+
+const ASSET_CLASS_BADGE_CLASS: Record<AssetClass, string> = {
+  equities: "bg-equities/10 text-equities-foreground dark:bg-equities/20",
+  bonds: "bg-bonds/10 text-bonds-foreground dark:bg-bonds/20",
+  futures: "bg-futures/10 text-futures-foreground dark:bg-futures/20",
+}
+
+/**
+ * What the Positions table's "Asset Class" column shows for a row. Bond
+ * futures like ZT=F already come back from the backend as asset_type "bond"
+ * (see MANUAL_BOND_TICKERS in the backend), so they show as "Bonds" here too.
+ */
+export function positionAssetLabel(assetClass: AssetClass): PositionAssetLabel {
+  return { label: ASSET_CLASS_LABELS[assetClass], className: ASSET_CLASS_BADGE_CLASS[assetClass] }
+}
 
 export const HOLDINGS: HoldingPosition[] = [
   {
@@ -63,36 +83,6 @@ export const HOLDINGS: HoldingPosition[] = [
     avgPrice: 421.88,
     currentPrice: 118.11,
     dayChangePercent: 2.87,
-  },
-  {
-    symbol: "EUR/USD",
-    name: "Euro / US Dollar",
-    assetClass: "fx",
-    side: "long",
-    quantity: 20000,
-    avgPrice: 1.0812,
-    currentPrice: 1.0934,
-    dayChangePercent: 0.18,
-  },
-  {
-    symbol: "GBP/USD",
-    name: "British Pound / US Dollar",
-    assetClass: "fx",
-    side: "short",
-    quantity: 15000,
-    avgPrice: 1.2645,
-    currentPrice: 1.2588,
-    dayChangePercent: -0.32,
-  },
-  {
-    symbol: "USD/JPY",
-    name: "US Dollar / Japanese Yen",
-    assetClass: "fx",
-    side: "long",
-    quantity: 250,
-    avgPrice: 148.2,
-    currentPrice: 151.76,
-    dayChangePercent: 0.47,
   },
   {
     symbol: "UST10Y",
@@ -127,7 +117,7 @@ export const HOLDINGS: HoldingPosition[] = [
   {
     symbol: "GLD",
     name: "Gold",
-    assetClass: "commodities",
+    assetClass: "futures",
     side: "long",
     quantity: 80,
     avgPrice: 178.4,
@@ -137,7 +127,7 @@ export const HOLDINGS: HoldingPosition[] = [
   {
     symbol: "SLV",
     name: "Silver",
-    assetClass: "commodities",
+    assetClass: "futures",
     side: "long",
     quantity: 300,
     avgPrice: 21.15,
@@ -147,7 +137,7 @@ export const HOLDINGS: HoldingPosition[] = [
   {
     symbol: "USO",
     name: "Crude Oil",
-    assetClass: "commodities",
+    assetClass: "futures",
     side: "short",
     quantity: 100,
     avgPrice: 72.6,
@@ -182,18 +172,6 @@ export const OPTION_POSITIONS: OptionPosition[] = [
     dayChangePercent: -3.28,
   },
   {
-    symbol: "EUR/USD",
-    name: "Euro / US Dollar",
-    assetClass: "fx",
-    optionType: "call",
-    strike: 1.1,
-    expiry: "2026-08-15",
-    contracts: 8,
-    avgPrice: 0.0145,
-    currentPrice: 0.0168,
-    dayChangePercent: 1.05,
-  },
-  {
     symbol: "UST10Y",
     name: "US Treasury 10-Year Note",
     assetClass: "bonds",
@@ -208,7 +186,7 @@ export const OPTION_POSITIONS: OptionPosition[] = [
   {
     symbol: "GLD",
     name: "Gold",
-    assetClass: "commodities",
+    assetClass: "futures",
     optionType: "call",
     strike: 230,
     expiry: "2026-09-19",

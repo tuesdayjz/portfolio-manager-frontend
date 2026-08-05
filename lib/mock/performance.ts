@@ -23,7 +23,7 @@ const MOCK_ASSET_CLASS: Record<Exclude<PerformanceSeriesKey, "all">, AssetClass>
   stock: "equities",
   bond: "bonds",
   etf: "equities",
-  crypto: "commodities",
+  crypto: "futures",
 }
 
 export type TimeRangeKey = "1W" | "1M" | "3M" | "YTD" | "1Y" | "ALL"

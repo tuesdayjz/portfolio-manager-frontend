@@ -33,6 +33,7 @@ import {
   ASSET_CLASSES,
   HOLDINGS,
   OPTION_POSITIONS,
+  positionAssetLabel,
   type AssetClass,
   type HoldingPosition,
   type OptionPosition,
@@ -69,11 +70,20 @@ function DayChange({ percent }: { percent: number }) {
   )
 }
 
+function AssetClassBadge({ assetClass }: { assetClass: AssetClass }) {
+  const { label, className } = positionAssetLabel(assetClass)
+  return (
+    <Badge variant="secondary" className={cn("shrink-0", className)}>
+      {label}
+    </Badge>
+  )
+}
+
 function assetClassFromApi(assetType: string): AssetClass {
   const type = assetType.toLowerCase()
-  if (type.includes("fx") || type.includes("forex") || type.includes("currency")) return "fx"
   if (type.includes("bond") || type.includes("fixed")) return "bonds"
-  if (type.includes("commodity") || type.includes("metal") || type.includes("energy")) return "commodities"
+  if (type.includes("commodity") || type.includes("metal") || type.includes("energy") || type.includes("future"))
+    return "futures"
   return "equities"
 }
 
@@ -147,6 +157,7 @@ function SortableHeader({
 // vertically between the two stacked tables.
 const COLUMN_WIDTH = {
   symbol: 200,
+  assetClass: 110,
   type: 64,
   strike: 84,
   expiry: 104,
@@ -215,6 +226,7 @@ function HoldingsTable({ positions }: { positions: HoldingPosition[] }) {
             >
               <colgroup>
                 <col style={{ width: COLUMN_WIDTH.symbol }} />
+                <col style={{ width: COLUMN_WIDTH.assetClass }} />
                 <col style={{ width: COLUMN_WIDTH.type }} />
                 <col style={{ width: COLUMN_WIDTH.strike }} />
                 <col style={{ width: COLUMN_WIDTH.expiry }} />
@@ -227,6 +239,7 @@ function HoldingsTable({ positions }: { positions: HoldingPosition[] }) {
               <thead>
                 <tr className="border-b text-left text-muted-foreground">
                   <th className="py-1.5 pr-4 font-medium">Symbol</th>
+                  <th className="py-1.5 pr-4 font-medium">Asset Class</th>
                   <th className="py-1.5 pr-4 font-medium">Side</th>
                   <th className="py-1.5 pr-4 font-medium" aria-hidden />
                   <th className="py-1.5 pr-4 font-medium" aria-hidden />
@@ -247,6 +260,9 @@ function HoldingsTable({ positions }: { positions: HoldingPosition[] }) {
                     <td className="py-1.5 pr-4">
                       <div className="font-medium">{position.symbol}</div>
                       <div className="text-xs text-muted-foreground">{position.name}</div>
+                    </td>
+                    <td className="py-1.5 pr-4">
+                      <AssetClassBadge assetClass={position.assetClass} />
                     </td>
                     <td className="py-1.5 pr-4">
                       <Badge variant="secondary" className={`capitalize ${tradeBadgeClass}`}>
@@ -330,6 +346,7 @@ function OptionsTable({ positions }: { positions: OptionPosition[] }) {
             >
               <colgroup>
                 <col style={{ width: COLUMN_WIDTH.symbol }} />
+                <col style={{ width: COLUMN_WIDTH.assetClass }} />
                 <col style={{ width: COLUMN_WIDTH.type }} />
                 <col style={{ width: COLUMN_WIDTH.strike }} />
                 <col style={{ width: COLUMN_WIDTH.expiry }} />
@@ -342,6 +359,7 @@ function OptionsTable({ positions }: { positions: OptionPosition[] }) {
               <thead>
                 <tr className="border-b text-left text-muted-foreground">
                   <th className="py-1.5 pr-4 font-medium">Symbol</th>
+                  <th className="py-1.5 pr-4 font-medium">Asset Class</th>
                   <th className="py-1.5 pr-4 font-medium">Type</th>
                   <th className="py-1.5 pr-4 font-medium">Strike</th>
                   <th className="py-1.5 pr-4 font-medium">Expiry</th>
@@ -365,6 +383,9 @@ function OptionsTable({ positions }: { positions: OptionPosition[] }) {
                     <td className="py-1.5 pr-4">
                       <div className="font-medium">{position.symbol}</div>
                       <div className="text-xs text-muted-foreground">{position.name}</div>
+                    </td>
+                    <td className="py-1.5 pr-4">
+                      <AssetClassBadge assetClass={position.assetClass} />
                     </td>
                     <td className="py-1.5 pr-4">
                       <Badge variant="outline" className="capitalize">

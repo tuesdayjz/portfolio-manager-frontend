@@ -15,16 +15,14 @@ export type AllocationSlice = {
 
 const ASSET_CLASS_LABELS: Record<AssetClass, string> = {
   equities: "Equities",
-  fx: "Forex",
   bonds: "Bonds",
-  commodities: "Commodities",
+  futures: "Futures",
 }
 
 const ASSET_CLASS_COLORS: Record<AssetClass, string> = {
-  equities: "var(--chart-1)",
-  fx: "var(--chart-2)",
-  bonds: "var(--chart-3)",
-  commodities: "var(--chart-4)",
+  equities: "var(--equities)",
+  bonds: "var(--bonds)",
+  futures: "var(--futures)",
 }
 
 const marketValueByClass = new Map<AssetClass, number>()

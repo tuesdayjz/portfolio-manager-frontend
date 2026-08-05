@@ -27,7 +27,7 @@ import { cn } from "@/lib/utils"
 import { matchesQuery } from "@/lib/search"
 import { useSession } from "@/lib/auth"
 import { usePortfolioQuery } from "@/hooks/use-portfolio-query"
-import { tradeBadgeClass } from "@/lib/trade-status"
+import { sideBadgeClass, tradeBadgeClass } from "@/lib/trade-status"
 import { LoginPromptOverlay } from "@/components/layout/login-prompt-overlay"
 import {
   TRANSACTIONS,
@@ -46,10 +46,12 @@ function formatCurrency(value: number) {
   })
 }
 
-// Sell orders are shown in parentheses (accounting convention), regardless
-// of whether they're closing a long or opening/covering a short.
+// Buy orders are a cash outflow, so they're shown in parentheses (accounting
+// convention); sell orders are a cash inflow and shown plain. This is the
+// opposite of the Positions page, where a short's market value (a liability)
+// is what's parenthesized.
 function formatTradeTotal(total: number, type: TransactionType) {
-  return type === "SELL" ? `(${formatCurrency(total)})` : formatCurrency(total)
+  return type === "BUY" ? `(${formatCurrency(total)})` : formatCurrency(total)
 }
 
 function formatPrice(value: number) {
@@ -192,6 +194,7 @@ function TransactionsTable({
             </SortableHeader>
             <th className="py-1.5 pr-4 pl-4 text-left font-medium">Type</th>
             <th className="py-1.5 pr-4 text-left font-medium">Asset</th>
+            <th className="py-1.5 pr-4 text-left font-medium">Side</th>
             <SortableHeader sort={sort} sortKey="quantity" onSort={onSort}>
               Quantity
             </SortableHeader>
@@ -220,6 +223,14 @@ function TransactionsTable({
               <td className="py-2 pr-4">
                 <div className="font-medium">{tx.symbol}</div>
                 <div className="text-xs text-muted-foreground">{tx.name}</div>
+              </td>
+              <td className="py-2 pr-4">
+                <Badge
+                  variant="secondary"
+                  className={cn("capitalize", sideBadgeClass(tx.position ?? "long"))}
+                >
+                  {tx.position ?? "long"}
+                </Badge>
               </td>
               <td className="py-2 pr-4 text-right tabular-nums">
                 {tx.quantity.toLocaleString()}
@@ -362,6 +373,7 @@ export default function TransactionsPage() {
                     <Skeleton className="h-4 w-24" />
                     <Skeleton className="h-4 w-16" />
                     <Skeleton className="h-4 w-32" />
+                    <Skeleton className="h-4 w-16" />
                     <Skeleton className="h-4 w-20" />
                     <Skeleton className="h-4 w-20" />
                     <Skeleton className="h-4 w-24" />

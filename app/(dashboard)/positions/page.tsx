@@ -27,7 +27,7 @@ import { cn } from "@/lib/utils"
 import { matchesQuery } from "@/lib/search"
 import { useSession } from "@/lib/auth"
 import { usePortfolioQuery } from "@/hooks/use-portfolio-query"
-import { tradeBadgeClass } from "@/lib/trade-status"
+import { sideBadgeClass } from "@/lib/trade-status"
 import { LoginPromptOverlay } from "@/components/layout/login-prompt-overlay"
 import { ASSET_CLASS_TABS, type AssetClassTab } from "@/lib/asset-classes"
 import {
@@ -129,30 +129,38 @@ function TotalReturn({ dollar, percent }: { dollar: number; percent: number }) {
   )
 }
 
-type SortKey = "today" | "marketValue"
 type SortDir = "asc" | "desc"
-type SortState = { key: SortKey; dir: SortDir } | null
+type SortState<K extends string> = { key: K; dir: SortDir } | null
 
-function nextSortState(current: SortState, key: SortKey): SortState {
+function nextSortState<K extends string>(current: SortState<K>, key: K): SortState<K> {
   if (current?.key !== key) return { key, dir: "desc" }
   if (current.dir === "desc") return { key, dir: "asc" }
   return null
 }
 
-function SortableHeader({
+function compareSortValues(a: string | number, b: string | number, factor: number) {
+  if (typeof a === "string" && typeof b === "string") {
+    return a.localeCompare(b) * factor
+  }
+  return ((a as number) - (b as number)) * factor
+}
+
+function SortableHeader<K extends string>({
   sort,
   sortKey,
   onSort,
+  align = "left",
   children,
 }: {
-  sort: SortState
-  sortKey: SortKey
-  onSort: (key: SortKey) => void
+  sort: SortState<K>
+  sortKey: K
+  onSort: (key: K) => void
+  align?: "left" | "right"
   children: React.ReactNode
 }) {
   const active = sort?.key === sortKey
   return (
-    <th className="py-1.5 pr-4 text-right font-medium last:pr-0">
+    <th className={cn("py-1.5 pr-4 font-medium last:pr-0", align === "right" && "text-right")}>
       <button
         type="button"
         onClick={() => onSort(sortKey)}
@@ -205,8 +213,47 @@ const HOLDINGS_COLUMN_WIDTHS = [
 const HOLDINGS_TABLE_MIN_WIDTH = HOLDINGS_COLUMN_WIDTHS.reduce((a, b) => a + b, 0)
 const TABLE_MIN_WIDTH = Object.values(COLUMN_WIDTH).reduce((a, b) => a + b, 0)
 
+type HoldingSortKey =
+  | "symbol"
+  | "assetClass"
+  | "side"
+  | "quantity"
+  | "avgPrice"
+  | "currentPrice"
+  | "today"
+  | "marketValue"
+
+function holdingGainDollar(position: HoldingPosition) {
+  return (
+    (position.side === "short"
+      ? position.avgPrice - position.currentPrice
+      : position.currentPrice - position.avgPrice) * position.quantity
+  )
+}
+
+function holdingSortValue(position: HoldingPosition, key: HoldingSortKey): string | number {
+  switch (key) {
+    case "symbol":
+      return position.symbol
+    case "assetClass":
+      return position.assetClass
+    case "side":
+      return position.side
+    case "quantity":
+      return position.quantity
+    case "avgPrice":
+      return position.avgPrice
+    case "currentPrice":
+      return position.currentPrice
+    case "today":
+      return holdingGainDollar(position)
+    case "marketValue":
+      return signedMarketValue(position)
+  }
+}
+
 function HoldingsTable({ positions }: { positions: HoldingPosition[] }) {
-  const [sort, setSort] = useState<SortState>(null)
+  const [sort, setSort] = useState<SortState<HoldingSortKey>>(null)
 
   // Shorts are a liability, not an asset: they're listed individually below
   // but excluded from the aggregate market value and return, same as the
@@ -226,20 +273,12 @@ function HoldingsTable({ positions }: { positions: HoldingPosition[] }) {
   const sortedPositions = useMemo(() => {
     if (!sort) return positions
     const factor = sort.dir === "asc" ? 1 : -1
-    return [...positions].sort((a, b) => {
-      const aGain =
-        (a.side === "short" ? a.avgPrice - a.currentPrice : a.currentPrice - a.avgPrice) *
-        a.quantity
-      const bGain =
-        (b.side === "short" ? b.avgPrice - b.currentPrice : b.currentPrice - b.avgPrice) *
-        b.quantity
-      const aValue = sort.key === "today" ? aGain : signedMarketValue(a)
-      const bValue = sort.key === "today" ? bGain : signedMarketValue(b)
-      return (aValue - bValue) * factor
-    })
+    return [...positions].sort((a, b) =>
+      compareSortValues(holdingSortValue(a, sort.key), holdingSortValue(b, sort.key), factor)
+    )
   }, [positions, sort])
 
-  function handleSort(key: SortKey) {
+  function handleSort(key: HoldingSortKey) {
     setSort((current) => nextSortState(current, key))
   }
 
@@ -278,26 +317,35 @@ function HoldingsTable({ positions }: { positions: HoldingPosition[] }) {
               </colgroup>
               <thead>
                 <tr className="border-b text-left text-muted-foreground">
-                  <th className="py-1.5 pr-4 font-medium">Symbol</th>
-                  <th className="py-1.5 pr-4 font-medium">Asset Class</th>
-                  <th className="py-1.5 pr-4 font-medium">Side</th>
-                  <th className="py-1.5 pr-4 font-medium">Quantity</th>
-                  <th className="py-1.5 pr-4 font-medium">Avg Price</th>
-                  <th className="py-1.5 pr-4 font-medium">Current Price</th>
-                  <SortableHeader sort={sort} sortKey="today" onSort={handleSort}>
+                  <SortableHeader sort={sort} sortKey="symbol" onSort={handleSort}>
+                    Symbol
+                  </SortableHeader>
+                  <SortableHeader sort={sort} sortKey="assetClass" onSort={handleSort}>
+                    Asset Class
+                  </SortableHeader>
+                  <SortableHeader sort={sort} sortKey="side" onSort={handleSort}>
+                    Side
+                  </SortableHeader>
+                  <SortableHeader sort={sort} sortKey="quantity" onSort={handleSort}>
+                    Quantity
+                  </SortableHeader>
+                  <SortableHeader sort={sort} sortKey="avgPrice" onSort={handleSort}>
+                    Avg Price
+                  </SortableHeader>
+                  <SortableHeader sort={sort} sortKey="currentPrice" onSort={handleSort}>
+                    Current Price
+                  </SortableHeader>
+                  <SortableHeader sort={sort} sortKey="today" onSort={handleSort} align="right">
                     Unrealized Gain/Loss
                   </SortableHeader>
-                  <SortableHeader sort={sort} sortKey="marketValue" onSort={handleSort}>
+                  <SortableHeader sort={sort} sortKey="marketValue" onSort={handleSort} align="right">
                     Market Value
                   </SortableHeader>
                 </tr>
               </thead>
               <tbody>
                 {sortedPositions.map((position) => {
-                  const gainDollar =
-                    (position.side === "short"
-                      ? position.avgPrice - position.currentPrice
-                      : position.currentPrice - position.avgPrice) * position.quantity
+                  const gainDollar = holdingGainDollar(position)
                   const costBasis = position.quantity * position.avgPrice
                   const gainPercent =
                     costBasis !== 0 ? (gainDollar / costBasis) * 100 : 0
@@ -312,7 +360,10 @@ function HoldingsTable({ positions }: { positions: HoldingPosition[] }) {
                         <AssetClassBadge assetClass={position.assetClass} />
                       </td>
                       <td className="py-1.5 pr-4">
-                        <Badge variant="secondary" className={`capitalize ${tradeBadgeClass}`}>
+                        <Badge
+                          variant="secondary"
+                          className={cn("capitalize", sideBadgeClass(position.side))}
+                        >
                           {position.side}
                         </Badge>
                       </td>
@@ -337,8 +388,49 @@ function HoldingsTable({ positions }: { positions: HoldingPosition[] }) {
   )
 }
 
+type OptionSortKey =
+  | "symbol"
+  | "assetClass"
+  | "optionType"
+  | "strike"
+  | "expiry"
+  | "contracts"
+  | "avgPrice"
+  | "currentPrice"
+  | "today"
+  | "marketValue"
+
+function optionGainDollar(position: OptionPosition) {
+  return (position.currentPrice - position.avgPrice) * position.contracts
+}
+
+function optionSortValue(position: OptionPosition, key: OptionSortKey): string | number {
+  switch (key) {
+    case "symbol":
+      return position.symbol
+    case "assetClass":
+      return position.assetClass
+    case "optionType":
+      return position.optionType
+    case "strike":
+      return position.strike
+    case "expiry":
+      return position.expiry
+    case "contracts":
+      return position.contracts
+    case "avgPrice":
+      return position.avgPrice
+    case "currentPrice":
+      return position.currentPrice
+    case "today":
+      return optionGainDollar(position)
+    case "marketValue":
+      return position.contracts * position.currentPrice
+  }
+}
+
 function OptionsTable({ positions }: { positions: OptionPosition[] }) {
-  const [sort, setSort] = useState<SortState>(null)
+  const [sort, setSort] = useState<SortState<OptionSortKey>>(null)
 
   const marketValue = positions.reduce(
     (sum, p) => sum + p.contracts * p.currentPrice,
@@ -354,16 +446,12 @@ function OptionsTable({ positions }: { positions: OptionPosition[] }) {
   const sortedPositions = useMemo(() => {
     if (!sort) return positions
     const factor = sort.dir === "asc" ? 1 : -1
-    return [...positions].sort((a, b) => {
-      const aGain = (a.currentPrice - a.avgPrice) * a.contracts
-      const bGain = (b.currentPrice - b.avgPrice) * b.contracts
-      const aValue = sort.key === "today" ? aGain : a.contracts * a.currentPrice
-      const bValue = sort.key === "today" ? bGain : b.contracts * b.currentPrice
-      return (aValue - bValue) * factor
-    })
+    return [...positions].sort((a, b) =>
+      compareSortValues(optionSortValue(a, sort.key), optionSortValue(b, sort.key), factor)
+    )
   }, [positions, sort])
 
-  function handleSort(key: SortKey) {
+  function handleSort(key: OptionSortKey) {
     setSort((current) => nextSortState(current, key))
   }
 
@@ -404,26 +492,41 @@ function OptionsTable({ positions }: { positions: OptionPosition[] }) {
               </colgroup>
               <thead>
                 <tr className="border-b text-left text-muted-foreground">
-                  <th className="py-1.5 pr-4 font-medium">Symbol</th>
-                  <th className="py-1.5 pr-4 font-medium">Asset Class</th>
-                  <th className="py-1.5 pr-4 font-medium">Type</th>
-                  <th className="py-1.5 pr-4 font-medium">Strike</th>
-                  <th className="py-1.5 pr-4 font-medium">Expiry</th>
-                  <th className="py-1.5 pr-4 font-medium">Contracts</th>
-                  <th className="py-1.5 pr-4 font-medium">Avg Price</th>
-                  <th className="py-1.5 pr-4 font-medium">Current Price</th>
-                  <SortableHeader sort={sort} sortKey="today" onSort={handleSort}>
+                  <SortableHeader sort={sort} sortKey="symbol" onSort={handleSort}>
+                    Symbol
+                  </SortableHeader>
+                  <SortableHeader sort={sort} sortKey="assetClass" onSort={handleSort}>
+                    Asset Class
+                  </SortableHeader>
+                  <SortableHeader sort={sort} sortKey="optionType" onSort={handleSort}>
+                    Type
+                  </SortableHeader>
+                  <SortableHeader sort={sort} sortKey="strike" onSort={handleSort}>
+                    Strike
+                  </SortableHeader>
+                  <SortableHeader sort={sort} sortKey="expiry" onSort={handleSort}>
+                    Expiry
+                  </SortableHeader>
+                  <SortableHeader sort={sort} sortKey="contracts" onSort={handleSort}>
+                    Contracts
+                  </SortableHeader>
+                  <SortableHeader sort={sort} sortKey="avgPrice" onSort={handleSort}>
+                    Avg Price
+                  </SortableHeader>
+                  <SortableHeader sort={sort} sortKey="currentPrice" onSort={handleSort}>
+                    Current Price
+                  </SortableHeader>
+                  <SortableHeader sort={sort} sortKey="today" onSort={handleSort} align="right">
                     Unrealized Gain/Loss
                   </SortableHeader>
-                  <SortableHeader sort={sort} sortKey="marketValue" onSort={handleSort}>
+                  <SortableHeader sort={sort} sortKey="marketValue" onSort={handleSort} align="right">
                     Market Value
                   </SortableHeader>
                 </tr>
               </thead>
               <tbody>
                 {sortedPositions.map((position) => {
-                  const gainDollar =
-                    (position.currentPrice - position.avgPrice) * position.contracts
+                  const gainDollar = optionGainDollar(position)
                   const costBasis = position.contracts * position.avgPrice
                   const gainPercent =
                     costBasis !== 0 ? (gainDollar / costBasis) * 100 : 0

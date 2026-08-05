@@ -9,6 +9,7 @@ export type PortfolioSummary = {
   currencySymbol: string
   cashBalance: number
   totalMarketValue: number
+  totalShortLiability: number
   totalReturnPercent: number
   totalReturnDollar: number
 }
@@ -33,6 +34,7 @@ export async function getPortfolioSummary(): Promise<PortfolioSummary> {
     currencySymbol: data.currency_symbol,
     cashBalance: data.cash_balance,
     totalMarketValue: data.total_market_value,
+    totalShortLiability: data.total_short_liability,
     totalReturnPercent: data.total_return_percent,
     totalReturnDollar,
   }

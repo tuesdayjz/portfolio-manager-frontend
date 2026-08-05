@@ -10,7 +10,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { SegmentedToggle } from "@/components/trade/segmented-toggle"
 import { formatCurrency, getEodPrice, type SecurityQuote } from "@/lib/securities"
 import { createTransaction } from "@/lib/transactions"
-import type { TradeAction, TradeOrder } from "@/lib/trade-orders"
+import type { TradeAction, TradeOrder, TradePosition } from "@/lib/trade-orders"
 
 type TradeMode = "live" | "past"
 
@@ -36,10 +36,11 @@ function formatTradeDate(value: string) {
 // securities resets the ticket (quantity, action, confirmation, ...) via
 // remount instead of an effect that syncs state to a prop change.
 //
-// v1 only supports long positions - the backend schema rejects short
-// positions and limit orders, so those controls are omitted rather than
-// offered and rejected. Live orders execute at market price; "Insert Past
-// Trade" lets the user record a historical fill at a price/date they enter.
+// Limit orders aren't supported - live orders execute at market price;
+// "Insert Past Trade" lets the user record a historical fill at a
+// price/date they enter. The backend enforces that a ticker can't be
+// long and short at once (e.g. rejects "Buy" + "Long" while an open short
+// exists), surfaced through the same error banner as other order failures.
 export function EquityOrderForm({
   quote,
   onSubmit,
@@ -49,6 +50,7 @@ export function EquityOrderForm({
 }) {
   const [mode, setMode] = useState<TradeMode>("live")
   const [action, setAction] = useState<TradeAction>("buy")
+  const [position, setPosition] = useState<TradePosition>("long")
   const [quantity, setQuantity] = useState("100")
   const [tradeDate, setTradeDate] = useState("")
   const [pastPrice, setPastPrice] = useState("")
@@ -133,6 +135,7 @@ export function EquityOrderForm({
         ticker: quote.symbol,
         name: quote.name,
         transactionType: action,
+        position,
         quantity: qty,
         ...(isPast ? { tradeDate, price } : {}),
       })
@@ -144,7 +147,7 @@ export function EquityOrderForm({
         symbol: result.symbol,
         name: result.name,
         action,
-        position: "long",
+        position,
         quantity: qty,
         price: result.executedUnitPrice,
         total: result.executedPrice,
@@ -187,6 +190,23 @@ export function EquityOrderForm({
             { value: "sell", label: "Sell", activeClassName: "text-destructive" },
           ]}
         />
+      </div>
+
+      <div className="flex flex-col gap-1.5">
+        <Label>Position</Label>
+        <SegmentedToggle
+          value={position}
+          onChange={setPosition}
+          options={[
+            { value: "long", label: "Long", activeClassName: "text-chart-3" },
+            { value: "short", label: "Short", activeClassName: "text-destructive" },
+          ]}
+        />
+        <p className="text-xs text-muted-foreground">
+          {position === "long"
+            ? "Buy to open, sell to close."
+            : "Sell to open the short, buy to cover it."}
+        </p>
       </div>
 
       <div className="flex flex-col gap-1.5">

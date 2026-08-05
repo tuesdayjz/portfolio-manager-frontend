@@ -10,6 +10,8 @@ export type TransactionRecord = {
   symbol: string
   name: string
   assetClass: AssetClass
+  /** Defaults to "long" when omitted - only short-selling trades set this. */
+  position?: "long" | "short"
   quantity: number
   price: number
   total: number

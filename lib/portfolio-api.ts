@@ -20,6 +20,7 @@ export type ApiTransaction = {
   executed_unit_price: number
   executed_price: number
   quantity: number
+  position: "long" | "short"
   realized_pl?: number | null
   realized_pl_percent?: number | null
   symbol: string

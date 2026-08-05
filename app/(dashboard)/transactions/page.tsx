@@ -46,6 +46,12 @@ function formatCurrency(value: number) {
   })
 }
 
+// Sell orders are shown in parentheses (accounting convention), regardless
+// of whether they're closing a long or opening/covering a short.
+function formatTradeTotal(total: number, type: TransactionType) {
+  return type === "SELL" ? `(${formatCurrency(total)})` : formatCurrency(total)
+}
+
 function formatPrice(value: number) {
   return value.toLocaleString("en-US", {
     minimumFractionDigits: 2,
@@ -222,7 +228,7 @@ function TransactionsTable({
                 {formatPrice(tx.price)}
               </td>
               <td className="py-2 pr-4 text-right font-medium tabular-nums">
-                {formatCurrency(tx.total)}
+                {formatTradeTotal(tx.total, tx.type)}
               </td>
               <td className="py-2 pr-0 text-right">
                 <GainLoss
@@ -257,6 +263,7 @@ export default function TransactionsPage() {
         symbol: transaction.symbol,
         name: transaction.name,
         assetClass: assetClassFromApi(transaction.asset_type) as AssetClass,
+        position: transaction.position,
         quantity: transaction.quantity,
         price: transaction.executed_unit_price,
         total: transaction.executed_price,

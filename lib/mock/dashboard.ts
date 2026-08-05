@@ -25,8 +25,11 @@ const ASSET_CLASS_COLORS: Record<AssetClass, string> = {
   futures: "var(--futures)",
 }
 
+// Shorts are a liability, not an asset, so they're excluded from total
+// assets/allocation and tracked separately in `portfolioTotalShortLiability`.
 const marketValueByClass = new Map<AssetClass, number>()
 for (const holding of HOLDINGS) {
+  if (holding.side === "short") continue
   marketValueByClass.set(
     holding.assetClass,
     (marketValueByClass.get(holding.assetClass) ?? 0) + holding.quantity * holding.currentPrice
@@ -43,6 +46,10 @@ export const portfolioTotalValue = [...marketValueByClass.values()].reduce(
   (total, value) => total + value,
   0
 )
+
+export const portfolioTotalShortLiability = HOLDINGS.filter(
+  (holding) => holding.side === "short"
+).reduce((total, holding) => total + holding.quantity * holding.currentPrice, 0)
 
 export const assetAllocation: AllocationSlice[] = [...marketValueByClass.entries()]
   .map(([assetClass, value]) => ({

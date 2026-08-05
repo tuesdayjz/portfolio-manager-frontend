@@ -16,6 +16,19 @@ bun dev
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
+### Environment variables
+
+Copy `.env.example` to `.env.local` and fill in the values. Supabase and
+`BACKEND_URL` are required for auth and portfolio data; `GEMINI_API_KEY` is
+required for the DaoDun chat widget (`components/layout/pet-chat-widget.tsx`,
+served by `app/api/chat/route.ts`).
+
+Get a free Gemini API key at https://aistudio.google.com/apikey — see
+[Gemini API rate limits](https://ai.google.dev/gemini-api/docs/rate-limits)
+for current free-tier quotas. Without `GEMINI_API_KEY` set, the chat widget
+still renders but shows a friendly "not configured" error when a message is
+sent.
+
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.

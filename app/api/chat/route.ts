@@ -191,49 +191,80 @@ export async function POST(request: NextRequest) {
   const userName = (session.user.user_metadata as Record<string, string> | undefined)?.full_name
   const systemInstruction = buildSystemInstruction(userName, body.portfolio, body.mood ?? "idle")
 
-  const geminiContents = messages.map((m) => ({
-    role: m.role === "assistant" ? "model" : "user",
-    parts: [{ text: m.content }],
-  }))
+  // Ensure alternating turn structure and non-empty content for Gemini API
+  const formattedContents: { role: string; parts: { text: string }[] }[] = []
+  for (const m of messages) {
+    const role = m.role === "assistant" ? "model" : "user"
+    const content = m.content.trim()
+    if (!content) continue
 
-  const upstreamUrl = `${GEMINI_API_BASE}/models/${GEMINI_MODEL}:streamGenerateContent?alt=sse`
-
-  let upstream: Response
-  try {
-    upstream = await fetch(upstreamUrl, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        // Header-based auth (rather than a `?key=` query param) keeps the
-        // key out of any request logs that capture full URLs.
-        "x-goog-api-key": apiKey,
-      },
-      body: JSON.stringify({
-        contents: geminiContents,
-        systemInstruction: { role: "system", parts: [{ text: systemInstruction }] },
-        generationConfig: {
-          temperature: 0.8,
-          maxOutputTokens: 512,
-        },
-      }),
-      cache: "no-store",
-    })
-  } catch {
-    return NextResponse.json({ error: "Unable to reach DaoDun's chat service." }, { status: 502 })
+    const last = formattedContents[formattedContents.length - 1]
+    if (last && last.role === role) {
+      // Append text to existing turn if role is duplicated
+      last.parts[0].text += `\n\n${content}`
+    } else {
+      formattedContents.push({ role, parts: [{ text: content }] })
+    }
   }
 
-  if (!upstream.ok || !upstream.body) {
-    const errText = await upstream.text().catch(() => "")
-    console.error(`[/api/chat] Gemini error ${upstream.status}:`, errText.slice(0, 300))
+  // Ensure conversation starts with 'user'
+  while (formattedContents.length > 0 && formattedContents[0].role !== "user") {
+    formattedContents.shift()
+  }
 
-    if (upstream.status === 429) {
-      return NextResponse.json(
-        { error: "DaoDun is catching his breath (rate limited). Try again in a moment." },
-        { status: 429 }
-      )
+  if (formattedContents.length === 0) {
+    return NextResponse.json({ error: "Missing valid user message." }, { status: 400 })
+  }
+
+  const candidateModels = Array.from(
+    new Set([GEMINI_MODEL, "gemini-2.0-flash", "gemini-1.5-flash", "gemini-2.5-flash"])
+  ).filter(Boolean)
+
+  let upstream: Response | null = null
+  let lastErrorText = ""
+
+  for (const model of candidateModels) {
+    const upstreamUrl = `${GEMINI_API_BASE}/models/${model}:streamGenerateContent?alt=sse`
+    try {
+      const res = await fetch(upstreamUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-goog-api-key": apiKey,
+        },
+        body: JSON.stringify({
+          contents: formattedContents,
+          systemInstruction: { role: "system", parts: [{ text: systemInstruction }] },
+          generationConfig: {
+            temperature: 0.8,
+            maxOutputTokens: 512,
+          },
+        }),
+        cache: "no-store",
+      })
+
+      if (res.ok && res.body) {
+        upstream = res
+        break
+      }
+
+      lastErrorText = await res.text().catch(() => "")
+      console.warn(`[/api/chat] Gemini model ${model} failed with ${res.status}:`, lastErrorText.slice(0, 200))
+      
+      // If rate limited, don't try another model, just break and return 429
+      if (res.status === 429) {
+        return NextResponse.json(
+          { error: "DaoDun is catching his breath (rate limited). Try again in a moment." },
+          { status: 429 }
+        )
+      }
+    } catch (err) {
+      console.warn(`[/api/chat] Fetch failed for model ${model}:`, err)
     }
+  }
 
-    return NextResponse.json({ error: "Chat is temporarily unavailable." }, { status: 502 })
+  if (!upstream || !upstream.body) {
+    return NextResponse.json({ error: "Chat service is temporarily unavailable." }, { status: 502 })
   }
 
   // Re-stream Gemini's server-sent events as plain text deltas, so the

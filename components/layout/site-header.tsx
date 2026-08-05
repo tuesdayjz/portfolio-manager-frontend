@@ -19,7 +19,6 @@ import { CapitalDialog } from "@/components/trade/capital-dialog"
 import { portfolioTotalShortLiability, portfolioTotalValue } from "@/lib/mock/dashboard"
 import { getPerformanceSummary } from "@/lib/mock/performance"
 import { usePortfolioSummary } from "@/lib/portfolio"
-import { usePortfolioQuery } from "@/hooks/use-portfolio-query"
 import { useSession } from "@/lib/auth"
 
 const mockPortfolio = getPerformanceSummary("all")
@@ -39,11 +38,6 @@ export function SiteHeader() {
   const showSkeleton = isLoggedIn && isLoading
   const hasFetchFailed = isLoggedIn && !isLoading && (isError || !summary)
 
-  const { data: perfData } = usePortfolioQuery(
-    isLoggedIn,
-    (api) => api.getPerformance("all", "all")
-  )
-
   const totalAssets = summary
     ? summary.totalMarketValue
     : isLoggedIn
@@ -55,9 +49,7 @@ export function SiteHeader() {
     : isLoggedIn
     ? 0
     : portfolioTotalShortLiability
-  const totalReturnPercent = perfData
-    ? perfData.metrics.total_return.percent
-    : summary
+  const totalReturnPercent = summary
     ? summary.totalReturnPercent
     : isLoggedIn
     ? 0

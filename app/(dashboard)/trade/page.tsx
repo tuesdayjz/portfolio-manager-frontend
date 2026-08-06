@@ -22,7 +22,7 @@ import {
   type SecuritySearchResult,
 } from "@/lib/securities"
 import type { TradeOrder } from "@/lib/trade-orders"
-import { tradeBadgeClass } from "@/lib/trade-status"
+import { typeBadgeClass } from "@/lib/trade-status"
 import { useSession } from "@/lib/auth"
 import { usePortfolioSummary } from "@/lib/portfolio"
 import { LoginPromptOverlay } from "@/components/layout/login-prompt-overlay"
@@ -54,7 +54,7 @@ function OrderHistory({ orders }: { orders: TradeOrder[] }) {
               className="flex items-center justify-between gap-4 rounded-lg border px-3 py-2 text-sm"
             >
               <div className="flex min-w-0 items-center gap-2">
-                <Badge variant="secondary" className={tradeBadgeClass}>
+                <Badge variant="secondary" className={typeBadgeClass(order.action)}>
                   {order.action}
                 </Badge>
                 <span className="font-medium">{order.symbol}</span>

@@ -1,6 +1,7 @@
 "use client"
 
-import { Cell, Pie, PieChart, ResponsiveContainer } from "recharts"
+import { useState } from "react"
+import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip, type TooltipProps } from "recharts"
 import { PieChart as PieChartIcon } from "lucide-react"
 
 import { assetAllocation, portfolioTotalValue } from "@/lib/mock/dashboard"
@@ -17,20 +18,68 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 
+const DISPLAY_GROUPS: Record<string, string> = {
+  stock: "Equities",
+  etf: "Equities",
+  fund: "Equities",
+  bond: "Bonds",
+  future: "Futures",
+  futures: "Futures",
+  option: "Options",
+  cash: "Cash",
+}
+
+const GROUP_ORDER = ["Equities", "Cash", "Bonds", "Futures", "Options"]
+
+// Matches the semantic palette used by the holdings/positions badge system.
+const LABEL_COLOR: Record<string, string> = {
+  Equities: "var(--equities)",
+  Cash:     "var(--primary)",
+  Bonds:    "var(--bonds)",
+  Futures:  "var(--futures)",
+  Options:  "var(--options)",
+}
+
+function AllocationTooltip({ active, payload }: TooltipProps<number, string>) {
+  if (!active || !payload?.length) return null
+  const slice = payload[0]
+  return (
+    <div className="rounded-md border border-border bg-popover px-3 py-2 text-sm shadow-md">
+      <span className="font-medium text-foreground">{slice.name}</span>
+      <span className="ml-2 text-muted-foreground">{(slice.value ?? 0).toFixed(1)}%</span>
+    </div>
+  )
+}
+
 export function AssetAllocationCard() {
   const user = useSession()
   const isLoggedIn = !!user
   const { data, isLoading } = usePortfolioQuery(isLoggedIn, (api) => api.getAllocation())
+  const [activeIndex, setActiveIndex] = useState<number | null>(null)
 
   // Only use mock data for non-logged-in users
   const allocation = data
-    ? data.items.map((item, index) => ({
-        label: item.category,
-        pct: item.weight * 100,
-        colorVar: `var(--chart-${(index % 5) + 1})`,
-      }))
+    ? (() => {
+        const grouped: Record<string, number> = {}
+        for (const item of data.items) {
+          const label = DISPLAY_GROUPS[item.category] ?? item.category
+          grouped[label] = (grouped[label] ?? 0) + item.weight * 100
+        }
+        const sorted = Object.entries(grouped).sort(([a], [b]) => {
+          const ai = GROUP_ORDER.indexOf(a)
+          const bi = GROUP_ORDER.indexOf(b)
+          return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi)
+        })
+        return sorted.map(([label, pct]) => ({
+          label,
+          pct,
+          colorVar: LABEL_COLOR[label] ?? "var(--muted-foreground)",
+        }))
+      })()
     : isLoggedIn ? [] : assetAllocation
   const totalValue = data?.total_value ?? (isLoggedIn ? 0 : portfolioTotalValue)
+
+  const activeSlice = activeIndex !== null ? allocation[activeIndex] : null
 
   return (
     <Card>
@@ -61,6 +110,7 @@ export function AssetAllocationCard() {
             <div className="relative size-40 shrink-0">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
+                  <Tooltip content={<AllocationTooltip />} />
                   <Pie
                     data={allocation.length > 0 ? allocation : [{ label: "empty", pct: 100, colorVar: "var(--muted)" }]}
                     dataKey="pct"
@@ -70,18 +120,33 @@ export function AssetAllocationCard() {
                     paddingAngle={allocation.length > 1 ? 2 : 0}
                     stroke="var(--card)"
                     strokeWidth={2}
+                    onMouseEnter={(_, index) => setActiveIndex(index)}
+                    onMouseLeave={() => setActiveIndex(null)}
                   >
-                    {(allocation.length > 0 ? allocation : [{ label: "empty", colorVar: "var(--muted)" }]).map((slice) => (
-                      <Cell key={slice.label} fill={slice.colorVar} />
+                    {(allocation.length > 0 ? allocation : [{ label: "empty", colorVar: "var(--muted)" }]).map((slice, index) => (
+                      <Cell
+                        key={slice.label}
+                        fill={slice.colorVar}
+                        opacity={activeIndex === null || activeIndex === index ? 1 : 0.45}
+                      />
                     ))}
                   </Pie>
                 </PieChart>
               </ResponsiveContainer>
-              <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
-                <span className="text-lg font-semibold tabular-nums">
-                  {formatCompactCurrency(totalValue)}
-                </span>
-                <span className="text-xs text-muted-foreground">Total Value</span>
+              <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center">
+                {activeSlice ? (
+                  <>
+                    <span className="text-sm font-semibold leading-tight">{activeSlice.label}</span>
+                    <span className="text-xs text-muted-foreground">{activeSlice.pct.toFixed(1)}%</span>
+                  </>
+                ) : (
+                  <>
+                    <span className="text-lg font-semibold tabular-nums">
+                      {formatCompactCurrency(totalValue)}
+                    </span>
+                    <span className="text-xs text-muted-foreground">Total Value</span>
+                  </>
+                )}
               </div>
             </div>
 

@@ -1,14 +1,21 @@
-/** Shared blue treatment for trade and position badges. */
-export const tradeBadgeClass = "bg-info/10 text-info-foreground"
-
-/** Long positions get the shared blue trade badge; shorts get the destructive
- * treatment, since they carry margin/borrow risk that longs don't. */
-export function sideBadgeClass(side: "long" | "short") {
-  return side === "short" ? "bg-destructive/10 text-destructive" : tradeBadgeClass
+/** Per-type badge colour: BUY=green, SELL=red, cash events=neutral. */
+export function typeBadgeClass(type: string): string {
+  switch (type.toUpperCase()) {
+    case "BUY":  return "bg-chart-3/10 text-chart-3"
+    case "SELL": return "bg-destructive/10 text-destructive"
+    default:     return "bg-muted text-muted-foreground"
+  }
 }
 
-/** Matched transparent delta badge used in both dashboard and detail tables. */
-export function deltaBadgeClass(value: number) {
+/** Long=blue, short=red — matches the directional risk each carries. */
+export function sideBadgeClass(side: "long" | "short"): string {
+  return side === "short"
+    ? "bg-destructive/10 text-destructive"
+    : "bg-info/10 text-info-foreground"
+}
+
+/** Positive delta=green, negative=red — same palette as BUY/SELL. */
+export function deltaBadgeClass(value: number): string {
   return value >= 0
     ? "bg-chart-3/10 text-chart-3"
     : "bg-destructive/10 text-destructive"

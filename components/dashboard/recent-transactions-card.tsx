@@ -7,7 +7,7 @@ import { History } from "lucide-react"
 import { recentTransactions, totalTransactionsCount } from "@/lib/mock/dashboard"
 import { useSession } from "@/lib/auth"
 import { usePortfolioQuery } from "@/hooks/use-portfolio-query"
-import { tradeBadgeClass } from "@/lib/trade-status"
+import { typeBadgeClass } from "@/lib/trade-status"
 import { formatCurrency } from "@/lib/format"
 import { matchesQuery } from "@/lib/search"
 import {
@@ -129,7 +129,7 @@ export function RecentTransactionsCard() {
                       {tx.date}
                     </TableCell>
                     <TableCell>
-                      <Badge variant="secondary" className={tradeBadgeClass}>
+                      <Badge variant="secondary" className={typeBadgeClass(tx.type)}>
                         {tx.type}
                       </Badge>
                     </TableCell>

@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip, type TooltipProps } from "recharts"
+import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts"
 import { PieChart as PieChartIcon } from "lucide-react"
 
 import { assetAllocation, portfolioTotalValue } from "@/lib/mock/dashboard"
@@ -40,7 +40,7 @@ const LABEL_COLOR: Record<string, string> = {
   Options:  "var(--options)",
 }
 
-function AllocationTooltip({ active, payload }: TooltipProps<number, string>) {
+function AllocationTooltip({ active, payload }: { active?: boolean; payload?: Array<{ name?: string; value?: number }> }) {
   if (!active || !payload?.length) return null
   const slice = payload[0]
   return (

@@ -1,5 +1,6 @@
 import { HOLDINGS, OPTION_POSITIONS } from "@/lib/mock/positions"
 import type { AssetClassTab } from "@/lib/asset-classes"
+import { OPTION_CONTRACT_SIZE } from "@/lib/options"
 
 export type PerformanceSeriesKey = AssetClassTab
 
@@ -74,6 +75,7 @@ const PROFILES: Record<PerformanceSeriesKey, AssetProfile> = {
   equities: { drift: 0.0006, volatility: 0.013 },
   bonds: { drift: 0.0002, volatility: 0.004 },
   futures: { drift: 0.00035, volatility: 0.014 },
+  options: { drift: 0.0008, volatility: 0.032 },
 }
 
 export type PerformanceSummary = {
@@ -89,17 +91,22 @@ export function getPerformanceSummary(key: PerformanceSeriesKey): PerformanceSum
   const holdings = HOLDINGS.filter((p) => key === "all" || p.assetClass === key)
   const options = OPTION_POSITIONS.filter((p) => key === "all" || p.assetClass === key)
 
+  // Premiums are quoted per share, so an option's dollar figures scale by the
+  // contract size - the same conversion the Positions table applies. The live
+  // path gets this for free because the backend stores quantity in shares.
+  const optionShares = (p: (typeof options)[number]) => p.contracts * OPTION_CONTRACT_SIZE
+
   const marketValue =
     holdings.reduce((sum, p) => sum + p.quantity * p.currentPrice, 0) +
-    options.reduce((sum, p) => sum + p.contracts * p.currentPrice, 0)
+    options.reduce((sum, p) => sum + optionShares(p) * p.currentPrice, 0)
 
   const costBasis =
     holdings.reduce((sum, p) => sum + p.quantity * p.avgPrice, 0) +
-    options.reduce((sum, p) => sum + p.contracts * p.avgPrice, 0)
+    options.reduce((sum, p) => sum + optionShares(p) * p.avgPrice, 0)
 
   const todayChangeDollar =
     holdings.reduce((sum, p) => sum + p.quantity * p.currentPrice * (p.dayChangePercent / 100), 0) +
-    options.reduce((sum, p) => sum + p.contracts * p.currentPrice * (p.dayChangePercent / 100), 0)
+    options.reduce((sum, p) => sum + optionShares(p) * p.currentPrice * (p.dayChangePercent / 100), 0)
 
   const totalReturnDollar = marketValue - costBasis
 

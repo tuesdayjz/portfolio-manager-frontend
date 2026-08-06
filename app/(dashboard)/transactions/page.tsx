@@ -36,6 +36,7 @@ import {
   type TransactionType,
 } from "@/lib/mock/transactions"
 import type { AssetClass } from "@/lib/mock/positions"
+import { OPTION_CONTRACT_SIZE, parseOccSymbol } from "@/lib/options"
 
 function formatCurrency(value: number) {
   return value.toLocaleString("en-US", {
@@ -117,12 +118,20 @@ function nextSortState(current: SortState, key: SortKey): SortState {
   return { key, dir: current.dir === "desc" ? "asc" : "desc" }
 }
 
+// Option trades are persisted in shares (contracts x OPTION_CONTRACT_SIZE), but
+// the user traded contracts - so that's what the table shows and sorts on.
+function displayQuantity(record: TransactionRecord) {
+  return parseOccSymbol(record.symbol)
+    ? record.quantity / OPTION_CONTRACT_SIZE
+    : record.quantity
+}
+
 function sortValue(record: TransactionRecord, key: SortKey) {
   switch (key) {
     case "date":
       return record.date
     case "quantity":
-      return record.quantity
+      return displayQuantity(record)
     case "price":
       return record.price
     case "total":
@@ -233,7 +242,7 @@ function TransactionsTable({
                 </Badge>
               </td>
               <td className="py-2 pr-4 text-right tabular-nums">
-                {tx.quantity.toLocaleString()}
+                {displayQuantity(tx).toLocaleString()}
               </td>
               <td className="py-2 pr-4 text-right tabular-nums">
                 {formatPrice(tx.price)}

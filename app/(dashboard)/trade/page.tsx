@@ -8,7 +8,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsIndicator, TabsList, TabsTab } from "@/components/ui/tabs"
 import { EquityOrderForm } from "@/components/trade/equity-order-form"
 import { OptionOrderForm } from "@/components/trade/option-order-form"
@@ -16,13 +15,10 @@ import { QuoteCard } from "@/components/trade/quote-card"
 import { SecuritySearch } from "@/components/trade/security-search"
 import { CandlestickChart } from "@/components/trade/candlestick-chart"
 import {
-  formatCurrency,
   getQuote,
   type SecurityQuote,
   type SecuritySearchResult,
 } from "@/lib/securities"
-import type { TradeOrder } from "@/lib/trade-orders"
-import { tradeBadgeClass } from "@/lib/trade-status"
 import { useSession } from "@/lib/auth"
 import { usePortfolioSummary } from "@/lib/portfolio"
 import { LoginPromptOverlay } from "@/components/layout/login-prompt-overlay"
@@ -38,53 +34,8 @@ function optionsSupportedForType(type: string | null): boolean {
   return upper !== "BOND" && upper !== "FUTURE"
 }
 
-function OrderHistory({ orders }: { orders: TradeOrder[] }) {
-  if (orders.length === 0) return null
-
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Order Ticket History</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="flex flex-col gap-2">
-          {orders.map((order) => (
-            <div
-              key={order.id}
-              className="flex items-center justify-between gap-4 rounded-lg border px-3 py-2 text-sm"
-            >
-              <div className="flex min-w-0 items-center gap-2">
-                <Badge variant="secondary" className={tradeBadgeClass}>
-                  {order.action}
-                </Badge>
-                <span className="font-medium">{order.symbol}</span>
-                {order.instrument === "option" && (
-                  <span className="text-muted-foreground">
-                    {order.strike?.toFixed(2)} {order.optionType} exp {order.expiry}
-                  </span>
-                )}
-                <span className="capitalize text-muted-foreground">{order.position}</span>
-              </div>
-              <div className="shrink-0 text-right">
-                <div className="tabular-nums">
-                  {order.quantity.toLocaleString()}{" "}
-                  {order.instrument === "option" ? "contracts" : "shares"}
-                </div>
-                <div className="text-xs text-muted-foreground tabular-nums">
-                  {formatCurrency(order.total)}
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </CardContent>
-    </Card>
-  )
-}
-
 export default function TradePage() {
   const [tab, setTab] = useState<TradeTab>("equity")
-  const [orders, setOrders] = useState<TradeOrder[]>([])
   const user = useSession()
   const isLoggedIn = !!user
   const { refresh: refreshPortfolioSummary } = usePortfolioSummary()
@@ -118,8 +69,7 @@ export default function TradePage() {
     void loadQuote(result.symbol)
   }
 
-  function handleOrder(order: TradeOrder) {
-    setOrders((current) => [order, ...current])
+  function handleOrder() {
     refreshPortfolioSummary()
   }
 
@@ -194,8 +144,6 @@ export default function TradePage() {
             </CardContent>
           </Card>
         )}
-
-        <OrderHistory orders={orders} />
       </div>
 
       {!isLoggedIn && <LoginPromptOverlay />}

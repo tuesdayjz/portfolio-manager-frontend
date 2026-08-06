@@ -101,7 +101,7 @@ export function SiteHeader() {
         </div>
         <div className="flex flex-col gap-1">
           <span className="text-muted-foreground text-[11px] font-medium tracking-wide uppercase">
-            Total Gain/Loss
+            Total Return
           </span>
           {showSkeleton ? (
             <Skeleton className="h-5 w-16 my-0.5" />

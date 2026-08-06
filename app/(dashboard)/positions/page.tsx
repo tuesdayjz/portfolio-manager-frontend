@@ -30,6 +30,7 @@ import { usePortfolioQuery } from "@/hooks/use-portfolio-query"
 import { sideBadgeClass } from "@/lib/trade-status"
 import { LoginPromptOverlay } from "@/components/layout/login-prompt-overlay"
 import { ASSET_CLASS_TABS, type AssetClassTab } from "@/lib/asset-classes"
+import { OPTION_CONTRACT_SIZE, parseOccSymbol } from "@/lib/options"
 import {
   HOLDINGS,
   OPTION_POSITIONS,
@@ -400,8 +401,22 @@ type OptionSortKey =
   | "today"
   | "marketValue"
 
+// Premiums are quoted per share and a contract controls OPTION_CONTRACT_SIZE
+// shares, so every dollar figure for an option scales by the contract size.
+function optionNotional(position: OptionPosition, pricePerShare: number) {
+  return position.contracts * OPTION_CONTRACT_SIZE * pricePerShare
+}
+
+function optionMarketValue(position: OptionPosition) {
+  return optionNotional(position, position.currentPrice)
+}
+
+function optionCostBasis(position: OptionPosition) {
+  return optionNotional(position, position.avgPrice)
+}
+
 function optionGainDollar(position: OptionPosition) {
-  return (position.currentPrice - position.avgPrice) * position.contracts
+  return optionNotional(position, position.currentPrice - position.avgPrice)
 }
 
 function optionSortValue(position: OptionPosition, key: OptionSortKey): string | number {
@@ -425,22 +440,16 @@ function optionSortValue(position: OptionPosition, key: OptionSortKey): string |
     case "today":
       return optionGainDollar(position)
     case "marketValue":
-      return position.contracts * position.currentPrice
+      return optionMarketValue(position)
   }
 }
 
 function OptionsTable({ positions }: { positions: OptionPosition[] }) {
   const [sort, setSort] = useState<SortState<OptionSortKey>>(null)
 
-  const marketValue = positions.reduce(
-    (sum, p) => sum + p.contracts * p.currentPrice,
-    0
-  )
-  const costBasis = positions.reduce((sum, p) => sum + p.contracts * p.avgPrice, 0)
-  const totalReturnDollar = positions.reduce(
-    (sum, p) => sum + (p.currentPrice - p.avgPrice) * p.contracts,
-    0
-  )
+  const marketValue = positions.reduce((sum, p) => sum + optionMarketValue(p), 0)
+  const costBasis = positions.reduce((sum, p) => sum + optionCostBasis(p), 0)
+  const totalReturnDollar = positions.reduce((sum, p) => sum + optionGainDollar(p), 0)
   const totalReturnPercent = costBasis !== 0 ? (totalReturnDollar / costBasis) * 100 : 0
 
   const sortedPositions = useMemo(() => {
@@ -527,7 +536,7 @@ function OptionsTable({ positions }: { positions: OptionPosition[] }) {
               <tbody>
                 {sortedPositions.map((position) => {
                   const gainDollar = optionGainDollar(position)
-                  const costBasis = position.contracts * position.avgPrice
+                  const costBasis = optionCostBasis(position)
                   const gainPercent =
                     costBasis !== 0 ? (gainDollar / costBasis) * 100 : 0
 
@@ -557,7 +566,7 @@ function OptionsTable({ positions }: { positions: OptionPosition[] }) {
                         <GainLoss dollar={gainDollar} percent={gainPercent} />
                       </td>
                       <td className="py-1.5 pr-0 text-right">
-                        {formatCurrency(position.contracts * position.currentPrice)}
+                        {formatCurrency(optionMarketValue(position))}
                       </td>
                     </tr>
                   )
@@ -602,27 +611,56 @@ export default function PositionsPage() {
   const isLoggedIn = !!user
   const { data, isLoading, error } = usePortfolioQuery(isLoggedIn, (api) => api.getHoldings({ perPage: 100 }))
 
-  // Only use mock data for non-logged-in users
-  const holdings = useMemo(() => {
-    return data
-      ? data.items.map((holding) => ({
-          symbol: holding.ticker,
+  // Only use mock data for non-logged-in users. Option holdings come back in
+  // the same list as everything else, keyed by OCC contract symbol - split them
+  // out so they render in the Options table with their strike and expiry.
+  const { holdings, optionPositions } = useMemo(() => {
+    if (!data) {
+      return isLoggedIn
+        ? { holdings: [], optionPositions: [] }
+        : { holdings: HOLDINGS, optionPositions: OPTION_POSITIONS }
+    }
+
+    const holdings: HoldingPosition[] = []
+    const optionPositions: OptionPosition[] = []
+
+    for (const holding of data.items) {
+      const contract =
+        holding.asset_type.toLowerCase() === "option"
+          ? parseOccSymbol(holding.ticker)
+          : null
+
+      if (contract) {
+        optionPositions.push({
+          symbol: contract.underlying,
           name: holding.name,
           assetClass: assetClassFromApi(holding.asset_type),
-          side: holding.quantity < 0 ? ("short" as const) : ("long" as const),
-          quantity: Math.abs(holding.quantity),
+          optionType: contract.optionType,
+          strike: contract.strike,
+          expiry: contract.expiry,
+          // Stored in shares; a negative quantity is a written (short) contract.
+          contracts: Math.abs(holding.quantity) / OPTION_CONTRACT_SIZE,
           avgPrice: holding.average_purchase_price,
           currentPrice: holding.current_price,
           dayChangePercent: holding.today_return_percent,
-        }))
-      : isLoggedIn ? [] : HOLDINGS
+        })
+        continue
+      }
+
+      holdings.push({
+        symbol: holding.ticker,
+        name: holding.name,
+        assetClass: assetClassFromApi(holding.asset_type),
+        side: holding.quantity < 0 ? "short" : "long",
+        quantity: Math.abs(holding.quantity),
+        avgPrice: holding.average_purchase_price,
+        currentPrice: holding.current_price,
+        dayChangePercent: holding.today_return_percent,
+      })
+    }
+
+    return { holdings, optionPositions }
   }, [data, isLoggedIn])
-  // The current backend contract exposes holdings only; keep the existing sample
-  // option positions for visitors until options are added to that contract.
-  const optionPositions = useMemo(
-    () => (isLoggedIn ? [] : OPTION_POSITIONS),
-    [isLoggedIn]
-  )
 
   // Filter by asset class
   const holdingsByClass = useMemo(() => {

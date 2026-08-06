@@ -1,6 +1,6 @@
 import type { AssetClass } from "@/lib/mock/positions"
 
-export type TransactionType = "BUY" | "SELL"
+export type TransactionType = "BUY" | "SELL" | "DEPOSIT" | "WITHDRAWAL"
 
 export type TransactionRecord = {
   id: string

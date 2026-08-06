@@ -14,11 +14,15 @@ export const ASSET_CLASS_TABS: { value: AssetClassTab; label: string }[] = [
 ]
 
 // The app names its classes after what they hold; the API names them after the
-// instrument. The two vocabularies line up one-to-one.
+// instrument. The two vocabularies line up one-to-one, but note the API's names
+// are singular - `asset_type` is compared against the stored value verbatim
+// (see QUOTE_TYPE_TO_ASSET_TYPE in the backend), so a plural here silently
+// matches nothing and returns an empty series.
 const API_ASSET_TYPE: Record<AssetClass, PortfolioAssetType> = {
   equities: "stock",
   bonds: "bond",
-  futures: "futures",
+  futures: "future",
+  options: "option",
 }
 
 /** Translates a tab into the `asset_type` the API filters by. */

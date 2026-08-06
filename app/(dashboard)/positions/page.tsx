@@ -27,9 +27,10 @@ import { cn } from "@/lib/utils"
 import { matchesQuery } from "@/lib/search"
 import { useSession } from "@/lib/auth"
 import { usePortfolioQuery } from "@/hooks/use-portfolio-query"
-import { tradeBadgeClass } from "@/lib/trade-status"
+import { sideBadgeClass } from "@/lib/trade-status"
 import { LoginPromptOverlay } from "@/components/layout/login-prompt-overlay"
 import { ASSET_CLASS_TABS, type AssetClassTab } from "@/lib/asset-classes"
+import { OPTION_CONTRACT_SIZE, parseOccSymbol } from "@/lib/options"
 import {
   HOLDINGS,
   OPTION_POSITIONS,
@@ -105,6 +106,7 @@ function AssetClassBadge({ assetClass }: { assetClass: AssetClass }) {
 
 function assetClassFromApi(assetType: string): AssetClass {
   const type = assetType.toLowerCase()
+  if (type.includes("option")) return "options"
   if (type.includes("bond") || type.includes("fixed")) return "bonds"
   if (type.includes("commodity") || type.includes("metal") || type.includes("energy") || type.includes("future"))
     return "futures"
@@ -129,30 +131,38 @@ function TotalReturn({ dollar, percent }: { dollar: number; percent: number }) {
   )
 }
 
-type SortKey = "today" | "marketValue"
 type SortDir = "asc" | "desc"
-type SortState = { key: SortKey; dir: SortDir } | null
+type SortState<K extends string> = { key: K; dir: SortDir } | null
 
-function nextSortState(current: SortState, key: SortKey): SortState {
+function nextSortState<K extends string>(current: SortState<K>, key: K): SortState<K> {
   if (current?.key !== key) return { key, dir: "desc" }
   if (current.dir === "desc") return { key, dir: "asc" }
   return null
 }
 
-function SortableHeader({
+function compareSortValues(a: string | number, b: string | number, factor: number) {
+  if (typeof a === "string" && typeof b === "string") {
+    return a.localeCompare(b) * factor
+  }
+  return ((a as number) - (b as number)) * factor
+}
+
+function SortableHeader<K extends string>({
   sort,
   sortKey,
   onSort,
+  align = "left",
   children,
 }: {
-  sort: SortState
-  sortKey: SortKey
-  onSort: (key: SortKey) => void
+  sort: SortState<K>
+  sortKey: K
+  onSort: (key: K) => void
+  align?: "left" | "right"
   children: React.ReactNode
 }) {
   const active = sort?.key === sortKey
   return (
-    <th className="py-1.5 pr-4 text-right font-medium last:pr-0">
+    <th className={cn("py-1.5 pr-4 font-medium last:pr-0", align === "right" && "text-right")}>
       <button
         type="button"
         onClick={() => onSort(sortKey)}
@@ -205,8 +215,47 @@ const HOLDINGS_COLUMN_WIDTHS = [
 const HOLDINGS_TABLE_MIN_WIDTH = HOLDINGS_COLUMN_WIDTHS.reduce((a, b) => a + b, 0)
 const TABLE_MIN_WIDTH = Object.values(COLUMN_WIDTH).reduce((a, b) => a + b, 0)
 
+type HoldingSortKey =
+  | "symbol"
+  | "assetClass"
+  | "side"
+  | "quantity"
+  | "avgPrice"
+  | "currentPrice"
+  | "today"
+  | "marketValue"
+
+function holdingGainDollar(position: HoldingPosition) {
+  return (
+    (position.side === "short"
+      ? position.avgPrice - position.currentPrice
+      : position.currentPrice - position.avgPrice) * position.quantity
+  )
+}
+
+function holdingSortValue(position: HoldingPosition, key: HoldingSortKey): string | number {
+  switch (key) {
+    case "symbol":
+      return position.symbol
+    case "assetClass":
+      return position.assetClass
+    case "side":
+      return position.side
+    case "quantity":
+      return position.quantity
+    case "avgPrice":
+      return position.avgPrice
+    case "currentPrice":
+      return position.currentPrice
+    case "today":
+      return holdingGainDollar(position)
+    case "marketValue":
+      return signedMarketValue(position)
+  }
+}
+
 function HoldingsTable({ positions }: { positions: HoldingPosition[] }) {
-  const [sort, setSort] = useState<SortState>(null)
+  const [sort, setSort] = useState<SortState<HoldingSortKey>>(null)
 
   // Shorts are a liability, not an asset: they're listed individually below
   // but excluded from the aggregate market value and return, same as the
@@ -226,20 +275,12 @@ function HoldingsTable({ positions }: { positions: HoldingPosition[] }) {
   const sortedPositions = useMemo(() => {
     if (!sort) return positions
     const factor = sort.dir === "asc" ? 1 : -1
-    return [...positions].sort((a, b) => {
-      const aGain =
-        (a.side === "short" ? a.avgPrice - a.currentPrice : a.currentPrice - a.avgPrice) *
-        a.quantity
-      const bGain =
-        (b.side === "short" ? b.avgPrice - b.currentPrice : b.currentPrice - b.avgPrice) *
-        b.quantity
-      const aValue = sort.key === "today" ? aGain : signedMarketValue(a)
-      const bValue = sort.key === "today" ? bGain : signedMarketValue(b)
-      return (aValue - bValue) * factor
-    })
+    return [...positions].sort((a, b) =>
+      compareSortValues(holdingSortValue(a, sort.key), holdingSortValue(b, sort.key), factor)
+    )
   }, [positions, sort])
 
-  function handleSort(key: SortKey) {
+  function handleSort(key: HoldingSortKey) {
     setSort((current) => nextSortState(current, key))
   }
 
@@ -278,26 +319,35 @@ function HoldingsTable({ positions }: { positions: HoldingPosition[] }) {
               </colgroup>
               <thead>
                 <tr className="border-b text-left text-muted-foreground">
-                  <th className="py-1.5 pr-4 font-medium">Symbol</th>
-                  <th className="py-1.5 pr-4 font-medium">Asset Class</th>
-                  <th className="py-1.5 pr-4 font-medium">Side</th>
-                  <th className="py-1.5 pr-4 font-medium">Quantity</th>
-                  <th className="py-1.5 pr-4 font-medium">Avg Price</th>
-                  <th className="py-1.5 pr-4 font-medium">Current Price</th>
-                  <SortableHeader sort={sort} sortKey="today" onSort={handleSort}>
+                  <SortableHeader sort={sort} sortKey="symbol" onSort={handleSort}>
+                    Symbol
+                  </SortableHeader>
+                  <SortableHeader sort={sort} sortKey="assetClass" onSort={handleSort}>
+                    Asset Class
+                  </SortableHeader>
+                  <SortableHeader sort={sort} sortKey="side" onSort={handleSort}>
+                    Side
+                  </SortableHeader>
+                  <SortableHeader sort={sort} sortKey="quantity" onSort={handleSort}>
+                    Quantity
+                  </SortableHeader>
+                  <SortableHeader sort={sort} sortKey="avgPrice" onSort={handleSort}>
+                    Avg Price
+                  </SortableHeader>
+                  <SortableHeader sort={sort} sortKey="currentPrice" onSort={handleSort}>
+                    Current Price
+                  </SortableHeader>
+                  <SortableHeader sort={sort} sortKey="today" onSort={handleSort} align="right">
                     Unrealized Gain/Loss
                   </SortableHeader>
-                  <SortableHeader sort={sort} sortKey="marketValue" onSort={handleSort}>
+                  <SortableHeader sort={sort} sortKey="marketValue" onSort={handleSort} align="right">
                     Market Value
                   </SortableHeader>
                 </tr>
               </thead>
               <tbody>
                 {sortedPositions.map((position) => {
-                  const gainDollar =
-                    (position.side === "short"
-                      ? position.avgPrice - position.currentPrice
-                      : position.currentPrice - position.avgPrice) * position.quantity
+                  const gainDollar = holdingGainDollar(position)
                   const costBasis = position.quantity * position.avgPrice
                   const gainPercent =
                     costBasis !== 0 ? (gainDollar / costBasis) * 100 : 0
@@ -312,7 +362,10 @@ function HoldingsTable({ positions }: { positions: HoldingPosition[] }) {
                         <AssetClassBadge assetClass={position.assetClass} />
                       </td>
                       <td className="py-1.5 pr-4">
-                        <Badge variant="secondary" className={`capitalize ${tradeBadgeClass}`}>
+                        <Badge
+                          variant="secondary"
+                          className={cn("capitalize", sideBadgeClass(position.side))}
+                        >
                           {position.side}
                         </Badge>
                       </td>
@@ -337,33 +390,78 @@ function HoldingsTable({ positions }: { positions: HoldingPosition[] }) {
   )
 }
 
-function OptionsTable({ positions }: { positions: OptionPosition[] }) {
-  const [sort, setSort] = useState<SortState>(null)
+type OptionSortKey =
+  | "symbol"
+  | "assetClass"
+  | "optionType"
+  | "strike"
+  | "expiry"
+  | "contracts"
+  | "avgPrice"
+  | "currentPrice"
+  | "today"
+  | "marketValue"
 
-  const marketValue = positions.reduce(
-    (sum, p) => sum + p.contracts * p.currentPrice,
-    0
-  )
-  const costBasis = positions.reduce((sum, p) => sum + p.contracts * p.avgPrice, 0)
-  const totalReturnDollar = positions.reduce(
-    (sum, p) => sum + (p.currentPrice - p.avgPrice) * p.contracts,
-    0
-  )
+// Premiums are quoted per share and a contract controls OPTION_CONTRACT_SIZE
+// shares, so every dollar figure for an option scales by the contract size.
+function optionNotional(position: OptionPosition, pricePerShare: number) {
+  return position.contracts * OPTION_CONTRACT_SIZE * pricePerShare
+}
+
+function optionMarketValue(position: OptionPosition) {
+  return optionNotional(position, position.currentPrice)
+}
+
+function optionCostBasis(position: OptionPosition) {
+  return optionNotional(position, position.avgPrice)
+}
+
+function optionGainDollar(position: OptionPosition) {
+  return optionNotional(position, position.currentPrice - position.avgPrice)
+}
+
+function optionSortValue(position: OptionPosition, key: OptionSortKey): string | number {
+  switch (key) {
+    case "symbol":
+      return position.symbol
+    case "assetClass":
+      return position.assetClass
+    case "optionType":
+      return position.optionType
+    case "strike":
+      return position.strike
+    case "expiry":
+      return position.expiry
+    case "contracts":
+      return position.contracts
+    case "avgPrice":
+      return position.avgPrice
+    case "currentPrice":
+      return position.currentPrice
+    case "today":
+      return optionGainDollar(position)
+    case "marketValue":
+      return optionMarketValue(position)
+  }
+}
+
+function OptionsTable({ positions }: { positions: OptionPosition[] }) {
+  const [sort, setSort] = useState<SortState<OptionSortKey>>(null)
+
+  const marketValue = positions.reduce((sum, p) => sum + optionMarketValue(p), 0)
+  const costBasis = positions.reduce((sum, p) => sum + optionCostBasis(p), 0)
+  const totalReturnDollar = positions.reduce((sum, p) => sum + optionGainDollar(p), 0)
   const totalReturnPercent = costBasis !== 0 ? (totalReturnDollar / costBasis) * 100 : 0
 
   const sortedPositions = useMemo(() => {
     if (!sort) return positions
     const factor = sort.dir === "asc" ? 1 : -1
-    return [...positions].sort((a, b) => {
-      const aGain = (a.currentPrice - a.avgPrice) * a.contracts
-      const bGain = (b.currentPrice - b.avgPrice) * b.contracts
-      const aValue = sort.key === "today" ? aGain : a.contracts * a.currentPrice
-      const bValue = sort.key === "today" ? bGain : b.contracts * b.currentPrice
-      return (aValue - bValue) * factor
-    })
+    return [...positions].sort((a, b) =>
+      compareSortValues(optionSortValue(a, sort.key), optionSortValue(b, sort.key), factor)
+    )
   }, [positions, sort])
 
-  function handleSort(key: SortKey) {
+  function handleSort(key: OptionSortKey) {
     setSort((current) => nextSortState(current, key))
   }
 
@@ -404,27 +502,42 @@ function OptionsTable({ positions }: { positions: OptionPosition[] }) {
               </colgroup>
               <thead>
                 <tr className="border-b text-left text-muted-foreground">
-                  <th className="py-1.5 pr-4 font-medium">Symbol</th>
-                  <th className="py-1.5 pr-4 font-medium">Asset Class</th>
-                  <th className="py-1.5 pr-4 font-medium">Type</th>
-                  <th className="py-1.5 pr-4 font-medium">Strike</th>
-                  <th className="py-1.5 pr-4 font-medium">Expiry</th>
-                  <th className="py-1.5 pr-4 font-medium">Contracts</th>
-                  <th className="py-1.5 pr-4 font-medium">Avg Price</th>
-                  <th className="py-1.5 pr-4 font-medium">Current Price</th>
-                  <SortableHeader sort={sort} sortKey="today" onSort={handleSort}>
+                  <SortableHeader sort={sort} sortKey="symbol" onSort={handleSort}>
+                    Symbol
+                  </SortableHeader>
+                  <SortableHeader sort={sort} sortKey="assetClass" onSort={handleSort}>
+                    Asset Class
+                  </SortableHeader>
+                  <SortableHeader sort={sort} sortKey="optionType" onSort={handleSort}>
+                    Type
+                  </SortableHeader>
+                  <SortableHeader sort={sort} sortKey="strike" onSort={handleSort}>
+                    Strike
+                  </SortableHeader>
+                  <SortableHeader sort={sort} sortKey="expiry" onSort={handleSort}>
+                    Expiry
+                  </SortableHeader>
+                  <SortableHeader sort={sort} sortKey="contracts" onSort={handleSort}>
+                    Contracts
+                  </SortableHeader>
+                  <SortableHeader sort={sort} sortKey="avgPrice" onSort={handleSort}>
+                    Avg Price
+                  </SortableHeader>
+                  <SortableHeader sort={sort} sortKey="currentPrice" onSort={handleSort}>
+                    Current Price
+                  </SortableHeader>
+                  <SortableHeader sort={sort} sortKey="today" onSort={handleSort} align="right">
                     Unrealized Gain/Loss
                   </SortableHeader>
-                  <SortableHeader sort={sort} sortKey="marketValue" onSort={handleSort}>
+                  <SortableHeader sort={sort} sortKey="marketValue" onSort={handleSort} align="right">
                     Market Value
                   </SortableHeader>
                 </tr>
               </thead>
               <tbody>
                 {sortedPositions.map((position) => {
-                  const gainDollar =
-                    (position.currentPrice - position.avgPrice) * position.contracts
-                  const costBasis = position.contracts * position.avgPrice
+                  const gainDollar = optionGainDollar(position)
+                  const costBasis = optionCostBasis(position)
                   const gainPercent =
                     costBasis !== 0 ? (gainDollar / costBasis) * 100 : 0
 
@@ -454,7 +567,7 @@ function OptionsTable({ positions }: { positions: OptionPosition[] }) {
                         <GainLoss dollar={gainDollar} percent={gainPercent} />
                       </td>
                       <td className="py-1.5 pr-0 text-right">
-                        {formatCurrency(position.contracts * position.currentPrice)}
+                        {formatCurrency(optionMarketValue(position))}
                       </td>
                     </tr>
                   )
@@ -484,10 +597,16 @@ function AssetClassPanel({
     ? optionPositions
     : optionPositions.filter((p) => p.assetClass === assetClass)
 
+  // The classes are disjoint - an option is only ever in "options", and nothing
+  // else is. Showing both tables on a specific tab would leave one of them
+  // permanently empty, so each tab renders only the table it can fill.
+  const showHoldings = assetClass !== "options"
+  const showOptions = assetClass === "all" || assetClass === "options"
+
   return (
     <div className="flex flex-col gap-4">
-      <HoldingsTable positions={holdingsInClass} />
-      <OptionsTable positions={optionsInClass} />
+      {showHoldings && <HoldingsTable positions={holdingsInClass} />}
+      {showOptions && <OptionsTable positions={optionsInClass} />}
     </div>
   )
 }
@@ -499,27 +618,56 @@ export default function PositionsPage() {
   const isLoggedIn = !!user
   const { data, isLoading, error } = usePortfolioQuery(isLoggedIn, (api) => api.getHoldings({ perPage: 100 }))
 
-  // Only use mock data for non-logged-in users
-  const holdings = useMemo(() => {
-    return data
-      ? data.items.map((holding) => ({
-          symbol: holding.ticker,
+  // Only use mock data for non-logged-in users. Option holdings come back in
+  // the same list as everything else, keyed by OCC contract symbol - split them
+  // out so they render in the Options table with their strike and expiry.
+  const { holdings, optionPositions } = useMemo(() => {
+    if (!data) {
+      return isLoggedIn
+        ? { holdings: [], optionPositions: [] }
+        : { holdings: HOLDINGS, optionPositions: OPTION_POSITIONS }
+    }
+
+    const holdings: HoldingPosition[] = []
+    const optionPositions: OptionPosition[] = []
+
+    for (const holding of data.items) {
+      const contract =
+        holding.asset_type.toLowerCase() === "option"
+          ? parseOccSymbol(holding.ticker)
+          : null
+
+      if (contract) {
+        optionPositions.push({
+          symbol: contract.underlying,
           name: holding.name,
           assetClass: assetClassFromApi(holding.asset_type),
-          side: holding.quantity < 0 ? ("short" as const) : ("long" as const),
-          quantity: Math.abs(holding.quantity),
+          optionType: contract.optionType,
+          strike: contract.strike,
+          expiry: contract.expiry,
+          // Stored in shares; a negative quantity is a written (short) contract.
+          contracts: Math.abs(holding.quantity) / OPTION_CONTRACT_SIZE,
           avgPrice: holding.average_purchase_price,
           currentPrice: holding.current_price,
           dayChangePercent: holding.today_return_percent,
-        }))
-      : isLoggedIn ? [] : HOLDINGS
+        })
+        continue
+      }
+
+      holdings.push({
+        symbol: holding.ticker,
+        name: holding.name,
+        assetClass: assetClassFromApi(holding.asset_type),
+        side: holding.quantity < 0 ? "short" : "long",
+        quantity: Math.abs(holding.quantity),
+        avgPrice: holding.average_purchase_price,
+        currentPrice: holding.current_price,
+        dayChangePercent: holding.today_return_percent,
+      })
+    }
+
+    return { holdings, optionPositions }
   }, [data, isLoggedIn])
-  // The current backend contract exposes holdings only; keep the existing sample
-  // option positions for visitors until options are added to that contract.
-  const optionPositions = useMemo(
-    () => (isLoggedIn ? [] : OPTION_POSITIONS),
-    [isLoggedIn]
-  )
 
   // Filter by asset class
   const holdingsByClass = useMemo(() => {

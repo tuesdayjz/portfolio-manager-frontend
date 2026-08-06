@@ -25,6 +25,14 @@ import {
   type SecurityQuote,
 } from "@/lib/securities"
 import { computeOptionGreeks } from "@/lib/option-greeks"
+import {
+  buildOccSymbol,
+  expiryDateValue,
+  formatOptionName,
+  OPTION_CONTRACT_SIZE,
+  type OptionContractDetails,
+} from "@/lib/options"
+import { createTransaction } from "@/lib/transactions"
 import type {
   OptionType,
   TradeAction,
@@ -68,6 +76,8 @@ export function OptionOrderForm({
   const [action, setAction] = useState<TradeAction>("buy")
   const [position, setPosition] = useState<TradePosition>("long")
   const [contracts, setContracts] = useState("1")
+  const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const [confirmation, setConfirmation] = useState<TradeOrder | null>(null)
 
   const chainRequestKey = chainRequestKeyOf({ symbol, date: chainDate })
@@ -133,37 +143,72 @@ export function OptionOrderForm({
   const numContracts = Number(contracts)
   const estimatedTotal = premium > 0 && numContracts > 0 ? premium * numContracts * 100 : 0
 
-  const canSubmit = usingLiveChain
-    ? !!selectedContract && numContracts > 0
-    : Number(manualStrike) > 0 && manualExpiry !== "" && premium > 0 && numContracts > 0
+  // A zero premium is rejected by the backend, so block it here rather than
+  // surfacing a validation error after the round trip.
+  const canSubmit =
+    premium > 0 &&
+    numContracts > 0 &&
+    !submitting &&
+    (usingLiveChain
+      ? !!selectedContract
+      : Number(manualStrike) > 0 && manualExpiry !== "")
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!canSubmit) return
 
-    const strike = usingLiveChain ? (selectedContract?.strike ?? 0) : Number(manualStrike)
-    const expiryLabel = usingLiveChain
-      ? formatExpiry(Number(expiry))
-      : manualExpiry
-
-    const order: TradeOrder = {
-      id: crypto.randomUUID(),
-      timestamp: Date.now(),
-      instrument: "option",
-      symbol,
-      name: quote?.name ?? symbol,
-      action,
-      position,
-      quantity: numContracts,
-      price: premium,
-      total: estimatedTotal,
+    const details: OptionContractDetails = {
+      underlying: symbol,
+      expiry: usingLiveChain
+        ? expiryDateValue(selectedContract?.expiry ?? Number(expiry))
+        : manualExpiry,
       optionType,
-      strike,
-      expiry: expiryLabel,
+      strike: usingLiveChain ? (selectedContract?.strike ?? 0) : Number(manualStrike),
     }
+    // Yahoo's own contractSymbol wins when we have it - adjusted contracts
+    // (e.g. after a split) carry a non-standard root we can't rebuild.
+    const contractSymbol = selectedContract?.contractSymbol ?? buildOccSymbol(details)
+    const expiryLabel = usingLiveChain ? formatExpiry(Number(expiry)) : manualExpiry
 
-    onSubmit(order)
-    setConfirmation(order)
+    setSubmitting(true)
+    setError(null)
+
+    try {
+      // Quantity goes to the backend in shares, and `premium` is the per-share
+      // price the user actually saw - passing it avoids re-fetching a contract
+      // whose quote may have moved between display and submit.
+      const result = await createTransaction({
+        ticker: contractSymbol,
+        name: formatOptionName(details),
+        transactionType: action,
+        position,
+        quantity: numContracts * OPTION_CONTRACT_SIZE,
+        price: premium,
+      })
+
+      const order: TradeOrder = {
+        id: crypto.randomUUID(),
+        timestamp: Date.now(),
+        instrument: "option",
+        symbol,
+        name: result.name,
+        action,
+        position,
+        quantity: numContracts,
+        price: result.executedUnitPrice,
+        total: result.executedPrice,
+        optionType,
+        strike: details.strike,
+        expiry: expiryLabel,
+      }
+
+      onSubmit(order)
+      setConfirmation(order)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unable to place order.")
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   function handleWizardSelect(contract: OptionContract, type: OptionType, date: number) {
@@ -358,8 +403,15 @@ export function OptionOrderForm({
       )}
 
       <Button type="submit" disabled={!canSubmit}>
-        Review &amp; Submit Order
+        {submitting ? "Submitting…" : "Review & Submit Order"}
       </Button>
+
+      {error && (
+        <Alert variant="destructive">
+          <AlertTitle>Order failed</AlertTitle>
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
 
       {confirmation && (
         <Alert>
@@ -367,11 +419,10 @@ export function OptionOrderForm({
           <AlertTitle>Order submitted</AlertTitle>
           <AlertDescription>
             {confirmation.action === "buy" ? "Bought" : "Sold"} {confirmation.quantity}{" "}
+            {confirmation.quantity === 1 ? "contract" : "contracts"} of{" "}
             {confirmation.symbol} {confirmation.strike?.toFixed(2)}{" "}
             {confirmation.optionType} exp {confirmation.expiry} ({confirmation.position}) at{" "}
-            {formatCurrency(confirmation.price, quote?.currency ?? "USD")} premium. This is
-            a simulated order for demonstration only — no real funds or trades are
-            executed.
+            {formatCurrency(confirmation.price, quote?.currency ?? "USD")} premium.
           </AlertDescription>
         </Alert>
       )}

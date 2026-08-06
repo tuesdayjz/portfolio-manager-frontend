@@ -69,7 +69,7 @@ export type PerformanceRange = "1d" | "1w" | "1m" | "3m" | "YTD" | "1y" | "all"
  * Note this is narrower than the vocabulary the API can return: the backend also
  * emits `etf`, `fund`, `crypto` and `cash`, none of which have a tab of their own.
  */
-export type PortfolioAssetType = "all" | "stock" | "bond" | "futures"
+export type PortfolioAssetType = "all" | "stock" | "bond" | "future" | "option"
 
 type Fetcher = typeof fetch
 

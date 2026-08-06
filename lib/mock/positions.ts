@@ -1,4 +1,4 @@
-export type AssetClass = "equities" | "bonds" | "futures"
+export type AssetClass = "equities" | "bonds" | "futures" | "options"
 
 export type HoldingSide = "long" | "short"
 
@@ -30,6 +30,7 @@ export const ASSET_CLASSES: { value: AssetClass; label: string }[] = [
   { value: "equities", label: "Equities" },
   { value: "bonds", label: "Bonds" },
   { value: "futures", label: "Futures" },
+  { value: "options", label: "Options" },
 ]
 
 export const ASSET_CLASS_LABELS: Record<AssetClass, string> = Object.fromEntries(
@@ -44,12 +45,14 @@ const ASSET_CLASS_SINGULAR_LABELS: Record<AssetClass, string> = {
   equities: "Equity",
   bonds: "Bond",
   futures: "Future",
+  options: "Option",
 }
 
 const ASSET_CLASS_BADGE_CLASS: Record<AssetClass, string> = {
   equities: "bg-equities/10 text-equities-foreground dark:bg-equities/20",
   bonds: "bg-bonds/10 text-bonds-foreground dark:bg-bonds/20",
   futures: "bg-futures/10 text-futures-foreground dark:bg-futures/20",
+  options: "bg-options/10 text-options-foreground dark:bg-options/20",
 }
 
 /**
@@ -161,7 +164,7 @@ export const OPTION_POSITIONS: OptionPosition[] = [
   {
     symbol: "AAPL",
     name: "Apple Inc.",
-    assetClass: "equities",
+    assetClass: "options",
     optionType: "call",
     strike: 220,
     expiry: "2026-09-18",
@@ -173,7 +176,7 @@ export const OPTION_POSITIONS: OptionPosition[] = [
   {
     symbol: "TSLA",
     name: "Tesla Inc.",
-    assetClass: "equities",
+    assetClass: "options",
     optionType: "put",
     strike: 210,
     expiry: "2026-08-21",
@@ -185,7 +188,7 @@ export const OPTION_POSITIONS: OptionPosition[] = [
   {
     symbol: "UST10Y",
     name: "US Treasury 10-Year Note",
-    assetClass: "bonds",
+    assetClass: "options",
     optionType: "put",
     strike: 96,
     expiry: "2026-10-16",
@@ -197,7 +200,7 @@ export const OPTION_POSITIONS: OptionPosition[] = [
   {
     symbol: "GLD",
     name: "Gold",
-    assetClass: "futures",
+    assetClass: "options",
     optionType: "call",
     strike: 230,
     expiry: "2026-09-19",

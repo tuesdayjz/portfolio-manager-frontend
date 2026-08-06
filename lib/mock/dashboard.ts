@@ -1,6 +1,7 @@
 import { getPerformanceSlice } from "@/lib/mock/performance"
 import { HOLDINGS, OPTION_POSITIONS, type AssetClass } from "@/lib/mock/positions"
 import { TRANSACTIONS } from "@/lib/mock/transactions"
+import { OPTION_CONTRACT_SIZE } from "@/lib/options"
 
 /**
  * Dashboard mock view models are derived from the detailed-screen fixtures.
@@ -17,12 +18,14 @@ const ASSET_CLASS_LABELS: Record<AssetClass, string> = {
   equities: "Equities",
   bonds: "Bonds",
   futures: "Futures",
+  options: "Options",
 }
 
 const ASSET_CLASS_COLORS: Record<AssetClass, string> = {
   equities: "var(--equities)",
   bonds: "var(--bonds)",
   futures: "var(--futures)",
+  options: "var(--options)",
 }
 
 // Shorts are a liability, not an asset, so they're excluded from total
@@ -35,10 +38,14 @@ for (const holding of HOLDINGS) {
     (marketValueByClass.get(holding.assetClass) ?? 0) + holding.quantity * holding.currentPrice
   )
 }
+// Premiums are quoted per share, so a contract's market value scales by the
+// contract size - without it Options would show as a rounding error next to
+// the other classes rather than as its own meaningful slice.
 for (const option of OPTION_POSITIONS) {
   marketValueByClass.set(
     option.assetClass,
-    (marketValueByClass.get(option.assetClass) ?? 0) + option.contracts * option.currentPrice
+    (marketValueByClass.get(option.assetClass) ?? 0) +
+      option.contracts * OPTION_CONTRACT_SIZE * option.currentPrice
   )
 }
 

@@ -106,6 +106,7 @@ function AssetClassBadge({ assetClass }: { assetClass: AssetClass }) {
 
 function assetClassFromApi(assetType: string): AssetClass {
   const type = assetType.toLowerCase()
+  if (type.includes("option")) return "options"
   if (type.includes("bond") || type.includes("fixed")) return "bonds"
   if (type.includes("commodity") || type.includes("metal") || type.includes("energy") || type.includes("future"))
     return "futures"
@@ -596,10 +597,16 @@ function AssetClassPanel({
     ? optionPositions
     : optionPositions.filter((p) => p.assetClass === assetClass)
 
+  // The classes are disjoint - an option is only ever in "options", and nothing
+  // else is. Showing both tables on a specific tab would leave one of them
+  // permanently empty, so each tab renders only the table it can fill.
+  const showHoldings = assetClass !== "options"
+  const showOptions = assetClass === "all" || assetClass === "options"
+
   return (
     <div className="flex flex-col gap-4">
-      <HoldingsTable positions={holdingsInClass} />
-      <OptionsTable positions={optionsInClass} />
+      {showHoldings && <HoldingsTable positions={holdingsInClass} />}
+      {showOptions && <OptionsTable positions={optionsInClass} />}
     </div>
   )
 }

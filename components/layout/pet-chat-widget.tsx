@@ -42,10 +42,18 @@ type Conversation = {
 }
 
 const GREETING =
-  "Sword up, shield ready! I'm DaoDun \u2014 ask me about your portfolio or investing basics."
+  "Sword up, shield ready! I'm DaoDun \u2014 ask me about your portfolio, app navigation, or investing basics."
 
-const CONVERSATIONS_STORAGE_KEY = "felix_daodun_conversations_v2"
-const ACTIVE_CONV_STORAGE_KEY = "felix_daodun_active_id_v2"
+const CONVERSATIONS_STORAGE_KEY_PREFIX = "felix_daodun_conversations_v2"
+const ACTIVE_CONV_STORAGE_KEY_PREFIX = "felix_daodun_active_id_v2"
+
+function getStorageKeys(userIdentifier: string) {
+  const safeId = encodeURIComponent(userIdentifier)
+  return {
+    conversationsKey: `${CONVERSATIONS_STORAGE_KEY_PREFIX}_${safeId}`,
+    activeConvKey: `${ACTIVE_CONV_STORAGE_KEY_PREFIX}_${safeId}`,
+  }
+}
 
 function createId() {
   return typeof crypto !== "undefined" && "randomUUID" in crypto
@@ -73,6 +81,7 @@ function generateTitleFromPrompt(prompt: string): string {
 export function PetChatWidget() {
   const user = useSession()
   const isLoggedIn = !!user
+  const userIdentifier = user?.id || user?.email || ""
   const { summary } = usePortfolioSummary()
   const [showDaoDun] = useShowDaoDun()
 
@@ -95,15 +104,37 @@ export function PetChatWidget() {
   const [activeAssistantId, setActiveAssistantId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [isLoaded, setIsLoaded] = useState(false)
+  const [loadedUserKey, setLoadedUserKey] = useState<string | null>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
 
   const mood: PetMood = petMoodFromReturn(summary?.totalReturnPercent ?? 0)
 
-  // Load conversations from local storage on mount
+  // Load conversations from local storage for current account
   useEffect(() => {
+    if (!userIdentifier) return
+
+    setIsLoaded(false)
+    const { conversationsKey, activeConvKey } = getStorageKeys(userIdentifier)
+
     try {
-      const savedConvs = localStorage.getItem(CONVERSATIONS_STORAGE_KEY)
-      const savedActiveId = localStorage.getItem(ACTIVE_CONV_STORAGE_KEY)
+      let savedConvs = localStorage.getItem(conversationsKey)
+      let savedActiveId = localStorage.getItem(activeConvKey)
+
+      // Legacy fallback and migration for existing single-user cache
+      if (!savedConvs) {
+        const legacyConvs = localStorage.getItem(CONVERSATIONS_STORAGE_KEY_PREFIX)
+        const legacyActiveId = localStorage.getItem(ACTIVE_CONV_STORAGE_KEY_PREFIX)
+        if (legacyConvs) {
+          savedConvs = legacyConvs
+          savedActiveId = legacyActiveId
+          localStorage.setItem(conversationsKey, legacyConvs)
+          if (legacyActiveId) {
+            localStorage.setItem(activeConvKey, legacyActiveId)
+          }
+          localStorage.removeItem(CONVERSATIONS_STORAGE_KEY_PREFIX)
+          localStorage.removeItem(ACTIVE_CONV_STORAGE_KEY_PREFIX)
+        }
+      }
 
       if (savedConvs) {
         const parsed = JSON.parse(savedConvs)
@@ -118,6 +149,7 @@ export function PetChatWidget() {
           setConversations(sanitized)
           const validActive = sanitized.find((c: Conversation) => c.id === savedActiveId)
           setActiveConversationId(validActive ? validActive.id : sanitized[0].id)
+          setLoadedUserKey(userIdentifier)
           setIsLoaded(true)
           return
         }
@@ -126,25 +158,27 @@ export function PetChatWidget() {
       console.error("Failed to load DaoDun conversations from cache:", e)
     }
 
-    // Default fallback
+    // Default fallback if no saved conversations for this account
     const initial = createDefaultConversation()
     setConversations([initial])
     setActiveConversationId(initial.id)
+    setLoadedUserKey(userIdentifier)
     setIsLoaded(true)
-  }, [])
+  }, [userIdentifier])
 
   // Sync to local storage
   useEffect(() => {
-    if (!isLoaded || conversations.length === 0) return
+    if (!isLoaded || !userIdentifier || loadedUserKey !== userIdentifier || conversations.length === 0) return
+    const { conversationsKey, activeConvKey } = getStorageKeys(userIdentifier)
     try {
-      localStorage.setItem(CONVERSATIONS_STORAGE_KEY, JSON.stringify(conversations))
+      localStorage.setItem(conversationsKey, JSON.stringify(conversations))
       if (activeConversationId) {
-        localStorage.setItem(ACTIVE_CONV_STORAGE_KEY, activeConversationId)
+        localStorage.setItem(activeConvKey, activeConversationId)
       }
     } catch (e) {
       console.error("Failed to save conversations to cache:", e)
     }
-  }, [conversations, activeConversationId, isLoaded])
+  }, [conversations, activeConversationId, isLoaded, userIdentifier, loadedUserKey])
 
   const activeConversation =
     conversations.find((c) => c.id === activeConversationId) || conversations[0]
@@ -188,9 +222,11 @@ export function PetChatWidget() {
     setConversations([fresh])
     setActiveConversationId(fresh.id)
     setShowHistoryPanel(false)
+    if (!userIdentifier) return
+    const { conversationsKey, activeConvKey } = getStorageKeys(userIdentifier)
     try {
-      localStorage.removeItem(CONVERSATIONS_STORAGE_KEY)
-      localStorage.removeItem(ACTIVE_CONV_STORAGE_KEY)
+      localStorage.removeItem(conversationsKey)
+      localStorage.removeItem(activeConvKey)
     } catch (e) {
       console.error("Failed to clear local cache", e)
     }

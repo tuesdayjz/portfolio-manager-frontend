@@ -27,7 +27,7 @@ import { cn } from "@/lib/utils"
 import { matchesQuery } from "@/lib/search"
 import { useSession } from "@/lib/auth"
 import { usePortfolioQuery } from "@/hooks/use-portfolio-query"
-import { sideBadgeClass, typeBadgeClass } from "@/lib/trade-status"
+import { sideBadgeClass, tradeBadgeClass } from "@/lib/trade-status"
 import { LoginPromptOverlay } from "@/components/layout/login-prompt-overlay"
 import {
   TRANSACTIONS,
@@ -225,7 +225,7 @@ function TransactionsTable({
                 {formatDate(tx.date)}
               </td>
               <td className="py-2 pr-4 pl-4">
-                <Badge variant="secondary" className={typeBadgeClass(tx.type)}>
+                <Badge variant="secondary" className={tradeBadgeClass}>
                   {tx.type}
                 </Badge>
               </td>
@@ -234,14 +234,12 @@ function TransactionsTable({
                 <div className="text-xs text-muted-foreground">{tx.name}</div>
               </td>
               <td className="py-2 pr-4">
-                {tx.type !== "DEPOSIT" && tx.type !== "WITHDRAWAL" && (
-                  <Badge
-                    variant="secondary"
-                    className={cn("capitalize", sideBadgeClass(tx.position ?? "long"))}
-                  >
-                    {tx.position ?? "long"}
-                  </Badge>
-                )}
+                <Badge
+                  variant="secondary"
+                  className={cn("capitalize", sideBadgeClass(tx.position ?? "long"))}
+                >
+                  {tx.position ?? "long"}
+                </Badge>
               </td>
               <td className="py-2 pr-4 text-right tabular-nums">
                 {displayQuantity(tx).toLocaleString()}

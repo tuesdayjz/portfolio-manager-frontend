@@ -1,6 +1,6 @@
 import { getPerformanceSlice } from "@/lib/mock/performance"
 import { HOLDINGS, OPTION_POSITIONS, type AssetClass } from "@/lib/mock/positions"
-import { TRANSACTIONS, type TransactionType } from "@/lib/mock/transactions"
+import { TRANSACTIONS } from "@/lib/mock/transactions"
 import { OPTION_CONTRACT_SIZE } from "@/lib/options"
 
 /**
@@ -105,7 +105,7 @@ export const totalPositionsCount = HOLDINGS.length
 
 export type Transaction = {
   date: string
-  type: TransactionType
+  type: "BUY" | "SELL"
   asset: string
   qty: number
   price: number

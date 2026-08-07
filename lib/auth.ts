@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/client"
 import { createInitialPortfolio } from "@/lib/portfolio-setup"
 
 export type SessionUser = {
+  id?: string
   email: string
   fullName: string
   dob: string
@@ -31,6 +32,7 @@ export function userFromSupabase(user: User | null): SessionUser | null {
   if (!user || !user.email) return null
   const meta = user.user_metadata as Record<string, string>
   return {
+    id: user.id,
     email: user.email,
     fullName: meta.full_name ?? "",
     dob: meta.dob ?? "",
